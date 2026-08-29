@@ -9,6 +9,12 @@ const test = require('node:test');
 
 const root = path.resolve(__dirname, '..');
 const cliPath = path.join(root, 'bin', 'run-invariant.js');
+const subjectPath = path.join(
+  root,
+  'test',
+  'fixtures',
+  'reference-subject.js',
+);
 
 test('--check reports a reproducible frozen protocol result', () => {
   const result = spawnSync(process.execPath, [cliPath, '--check'], {
@@ -55,7 +61,55 @@ test('--help exposes only standalone conformance modes', () => {
   assert.match(result.stdout, /--check/);
   assert.match(result.stdout, /--write/);
   assert.match(result.stdout, /--json/);
+  assert.match(result.stdout, /subject \[--json\] -- <executable>/);
   assert.doesNotMatch(result.stdout, /experiment/i);
+});
+
+test('subject mode reports external process conformance', () => {
+  const result = spawnSync(
+    process.execPath,
+    [cliPath, 'subject', '--', process.execPath, subjectPath],
+    { cwd: root, encoding: 'utf8' },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /RunInvariant subject contract 0\.1\.0/);
+  assert.match(result.stdout, /Subject conformance: 35\/35 cases/);
+  assert.match(result.stdout, /does not prove a governed agent loop/i);
+});
+
+test('subject --json returns a machine-readable external conformance packet', () => {
+  const result = spawnSync(
+    process.execPath,
+    [cliPath, 'subject', '--json', '--', process.execPath, subjectPath],
+    { cwd: root, encoding: 'utf8' },
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  const packet = JSON.parse(result.stdout);
+  assert.equal(packet.contract.version, '0.1.0');
+  assert.equal(packet.conformance.passed, 35);
+  assert.equal(packet.conformance.failed, 0);
+});
+
+test('subject mode identifies nonconforming cases and gives a recovery path', () => {
+  const result = spawnSync(
+    process.execPath,
+    [
+      cliPath,
+      'subject',
+      '--',
+      process.execPath,
+      subjectPath,
+      'nonconforming',
+    ],
+    { cwd: root, encoding: 'utf8' },
+  );
+
+  assert.equal(result.status, 1, result.stderr);
+  assert.match(result.stdout, /Subject conformance: 34\/35 cases/);
+  assert.match(result.stdout, /Failed cases: PLAN-001/);
+  assert.match(result.stdout, /rerun subject mode with --json/i);
 });
 
 test('--check explains recovery when committed evidence is missing', t => {

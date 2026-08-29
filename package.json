@@ -1,6 +1,6 @@
 {
   "name": "run-invariant",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Deterministic conformance evidence for agent-run integrity boundaries.",
   "private": true,
   "license": "Apache-2.0",
