@@ -4,6 +4,10 @@ const crypto = require('node:crypto');
 
 const { runConformance } = require('./conformance');
 
+// Protocol 0.1.0 evidence is byte-for-byte compatible with the original
+// BoundaryBench packet. New protocol versions may adopt the RunInvariant name.
+const LEGACY_BENCHMARK_NAME = 'BoundaryBench deterministic conformance';
+
 function sortObject(value) {
   if (Array.isArray(value)) {
     return value.map(sortObject);
@@ -84,7 +88,7 @@ function buildEvidencePacket({
   );
 
   return {
-    benchmark: 'BoundaryBench deterministic conformance',
+    benchmark: LEGACY_BENCHMARK_NAME,
     protocol: {
       name: protocol.name,
       version: protocol.version,

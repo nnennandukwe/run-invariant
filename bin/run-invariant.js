@@ -3,33 +3,32 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { spawnSync } = require('node:child_process');
 
 const {
   buildEvidencePacket,
   canonicalJson,
 } = require('../src/report');
 
-const boundarybenchRoot = path.resolve(__dirname, '..');
+const runInvariantRoot = path.resolve(__dirname, '..');
 const protocolPath = path.join(
-  boundarybenchRoot,
+  runInvariantRoot,
   'protocol',
   'v0.1.0.json',
 );
 const fixturesPath = path.join(
-  boundarybenchRoot,
+  runInvariantRoot,
   'fixtures',
   'cases.v0.1.0.json',
 );
 const evidencePath = path.join(
-  boundarybenchRoot,
+  runInvariantRoot,
   'evidence',
   'conformance-v0.1.0.json',
 );
 const evidenceDisplayPath = path.relative(
-  path.resolve(boundarybenchRoot, '..'),
+  runInvariantRoot,
   evidencePath,
-);
+).split(path.sep).join('/');
 
 function loadPacket() {
   const protocolBytes = fs.readFileSync(protocolPath);
@@ -48,7 +47,7 @@ function loadPacket() {
 function printSummary(packet, evidenceState) {
   process.stdout.write(
     [
-      `BoundaryBench protocol ${packet.protocol.version} (${packet.protocol.status})`,
+      `RunInvariant protocol ${packet.protocol.version} (${packet.protocol.status} legacy baseline)`,
       `Reference conformance: ${packet.reference.passed}/${packet.reference.total} cases`,
       `Mutation score: ${packet.mutation_analysis.killed}/${packet.mutation_analysis.total} mutants killed`,
       `Evidence check: ${evidenceState}`,
@@ -76,13 +75,13 @@ function passesProtocol(packet) {
 function printHelp() {
   process.stdout.write(
     [
-      'Usage: node boundarybench/bin/boundarybench.js <mode>',
+      'Usage: run-invariant <mode>',
+      '       node bin/run-invariant.js <mode>',
       '',
       'Modes:',
       '  --check  Compare a fresh packet with committed evidence.',
       '  --write  Replace committed evidence with a fresh packet.',
       '  --json   Print a fresh packet as JSON without writing.',
-      '  experiment <command>  Freeze, run, or report the exploratory pilot.',
       '',
     ].join('\n'),
   );
@@ -90,25 +89,6 @@ function printHelp() {
 
 function main(argv) {
   const mode = argv[0] || '--check';
-  if (mode === 'experiment') {
-    const experimentCli = path.join(
-      boundarybenchRoot,
-      'experiment',
-      'src',
-      'cli.ts',
-    );
-    const result = spawnSync(
-      process.execPath,
-      ['--import', 'tsx', experimentCli, ...argv.slice(1)],
-      {
-        cwd: path.resolve(boundarybenchRoot, '..'),
-        encoding: 'utf8',
-        stdio: 'inherit',
-      },
-    );
-    process.exitCode = result.status ?? 1;
-    return;
-  }
   if (!['--check', '--write', '--json', '--help'].includes(mode)) {
     process.stderr.write(`Unknown mode: ${mode}\n`);
     printHelp();
@@ -157,7 +137,7 @@ function main(argv) {
   } else if (!matches) {
     process.stderr.write(
       'Recovery: inspect the protocol, fixture, or evaluator change; '
-      + 'then run npm run boundarybench:update only when the new packet is intentional.\n',
+      + 'then run npm run evidence:update only when the new packet is intentional.\n',
     );
     process.exitCode = 1;
   }

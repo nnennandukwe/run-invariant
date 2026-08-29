@@ -1,0 +1,18 @@
+{
+  "name": "run-invariant",
+  "version": "0.1.0",
+  "description": "Deterministic conformance evidence for agent-run integrity boundaries.",
+  "private": true,
+  "license": "Apache-2.0",
+  "bin": {
+    "run-invariant": "bin/run-invariant.js"
+  },
+  "scripts": {
+    "check": "node bin/run-invariant.js --check",
+    "evidence:update": "node bin/run-invariant.js --write",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

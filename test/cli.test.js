@@ -8,29 +8,32 @@ const { spawnSync } = require('node:child_process');
 const test = require('node:test');
 
 const root = path.resolve(__dirname, '..');
-const cliPath = path.join(root, 'bin', 'boundarybench.js');
+const cliPath = path.join(root, 'bin', 'run-invariant.js');
 
 test('--check reports a reproducible frozen protocol result', () => {
   const result = spawnSync(process.execPath, [cliPath, '--check'], {
-    cwd: path.resolve(root, '..'),
+    cwd: root,
     encoding: 'utf8',
   });
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /BoundaryBench protocol 0\.1\.0 \(frozen\)/);
+  assert.match(
+    result.stdout,
+    /RunInvariant protocol 0\.1\.0 \(frozen legacy baseline\)/,
+  );
   assert.match(result.stdout, /Reference conformance: \d+\/\d+ cases/);
   assert.match(result.stdout, /Mutation score: 5\/5 mutants killed/);
   assert.match(result.stdout, /Evidence check: MATCH/);
   assert.match(
     result.stdout,
-    /Evidence path: boundarybench\/evidence\/conformance-v0\.1\.0\.json/,
+    /Evidence path: evidence\/conformance-v0\.1\.0\.json/,
   );
   assert.match(result.stdout, /does not measure real-agent outcomes/i);
 });
 
 test('--json returns only the machine-readable evidence packet', () => {
   const result = spawnSync(process.execPath, [cliPath, '--json'], {
-    cwd: path.resolve(root, '..'),
+    cwd: root,
     encoding: 'utf8',
   });
 
@@ -41,17 +44,31 @@ test('--json returns only the machine-readable evidence packet', () => {
   assert.equal(packet.mutation_analysis.killed, 5);
 });
 
+test('--help exposes only standalone conformance modes', () => {
+  const result = spawnSync(process.execPath, [cliPath, '--help'], {
+    cwd: root,
+    encoding: 'utf8',
+  });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /Usage: run-invariant <mode>/);
+  assert.match(result.stdout, /--check/);
+  assert.match(result.stdout, /--write/);
+  assert.match(result.stdout, /--json/);
+  assert.doesNotMatch(result.stdout, /experiment/i);
+});
+
 test('--check explains recovery when committed evidence is missing', t => {
   const temporaryRoot = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'boundarybench-cli-test-'),
+    path.join(os.tmpdir(), 'run-invariant-cli-test-'),
   );
   t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }));
 
-  const temporaryBoundarybench = path.join(temporaryRoot, 'boundarybench');
-  fs.cpSync(root, temporaryBoundarybench, { recursive: true });
+  const temporaryRunInvariant = path.join(temporaryRoot, 'run-invariant');
+  fs.cpSync(root, temporaryRunInvariant, { recursive: true });
   fs.rmSync(
     path.join(
-      temporaryBoundarybench,
+      temporaryRunInvariant,
       'evidence',
       'conformance-v0.1.0.json',
     ),
@@ -60,7 +77,7 @@ test('--check explains recovery when committed evidence is missing', t => {
   const result = spawnSync(
     process.execPath,
     [
-      path.join(temporaryBoundarybench, 'bin', 'boundarybench.js'),
+      path.join(temporaryRunInvariant, 'bin', 'run-invariant.js'),
       '--check',
     ],
     {
@@ -73,27 +90,27 @@ test('--check explains recovery when committed evidence is missing', t => {
   assert.match(result.stdout, /Evidence check: MISMATCH/);
   assert.match(
     result.stdout,
-    /Evidence path: boundarybench\/evidence\/conformance-v0\.1\.0\.json/,
+    /Evidence path: evidence\/conformance-v0\.1\.0\.json/,
   );
-  assert.match(result.stderr, /npm run boundarybench:update/);
+  assert.match(result.stderr, /npm run evidence:update/);
 });
 
 test('--write refuses to bless a nonconforming packet', t => {
   const temporaryRoot = fs.mkdtempSync(
-    path.join(os.tmpdir(), 'boundarybench-cli-test-'),
+    path.join(os.tmpdir(), 'run-invariant-cli-test-'),
   );
   t.after(() => fs.rmSync(temporaryRoot, { recursive: true, force: true }));
 
-  const temporaryBoundarybench = path.join(temporaryRoot, 'boundarybench');
-  fs.cpSync(root, temporaryBoundarybench, { recursive: true });
+  const temporaryRunInvariant = path.join(temporaryRoot, 'run-invariant');
+  fs.cpSync(root, temporaryRunInvariant, { recursive: true });
 
   const temporaryFixturesPath = path.join(
-    temporaryBoundarybench,
+    temporaryRunInvariant,
     'fixtures',
     'cases.v0.1.0.json',
   );
   const temporaryEvidencePath = path.join(
-    temporaryBoundarybench,
+    temporaryRunInvariant,
     'evidence',
     'conformance-v0.1.0.json',
   );
@@ -114,7 +131,7 @@ test('--write refuses to bless a nonconforming packet', t => {
   const result = spawnSync(
     process.execPath,
     [
-      path.join(temporaryBoundarybench, 'bin', 'boundarybench.js'),
+      path.join(temporaryRunInvariant, 'bin', 'run-invariant.js'),
       '--write',
     ],
     {
@@ -129,25 +146,5 @@ test('--write refuses to bless a nonconforming packet', t => {
   assert.equal(
     fs.readFileSync(temporaryEvidencePath, 'utf8'),
     evidenceBefore,
-  );
-});
-
-test('experiment help is routed without changing the deterministic CLI', () => {
-  const result = spawnSync(
-    process.execPath,
-    [cliPath, 'experiment', '--help'],
-    {
-      cwd: path.resolve(root, '..'),
-      encoding: 'utf8',
-    },
-  );
-
-  assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /BoundaryBench exploratory experiment/);
-  assert.match(result.stdout, /experiment freeze/);
-  assert.match(result.stdout, /current first-party price snapshot/i);
-  assert.match(
-    result.stdout,
-    /checkedAt and validThrough are inclusive UTC calendar dates/i,
   );
 });

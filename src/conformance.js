@@ -421,7 +421,7 @@ function evaluateCase(caseDefinition, options = {}) {
 
   const evaluator = evaluators[caseDefinition.gate];
   if (!evaluator) {
-    throw new Error(`Unsupported BoundaryBench gate: ${caseDefinition.gate}`);
+    throw new Error(`Unsupported RunInvariant gate: ${caseDefinition.gate}`);
   }
 
   return evaluator(caseDefinition.input || {}, options.mutant);
