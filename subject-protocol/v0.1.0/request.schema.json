@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/nnennandukwe/run-invariant/main/subject-protocol/v0.1.0/request.schema.json",
+  "title": "RunInvariant subject request 0.1.0",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "protocol", "fixtures", "cases"],
+  "properties": {
+    "schema_version": {
+      "const": "run-invariant.subject-request/0.1.0"
+    },
+    "protocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["version", "sha256"],
+      "properties": {
+        "version": { "type": "string", "minLength": 1 },
+        "sha256": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "fixtures": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha256"],
+      "properties": {
+        "sha256": { "$ref": "#/$defs/digest" }
+      }
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "gate", "input"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "gate": {
+            "enum": [
+              "plan",
+              "permission",
+              "tool_trust",
+              "verification",
+              "runtime",
+              "workflow"
+            ]
+          },
+          "input": { "type": "object" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  }
+}

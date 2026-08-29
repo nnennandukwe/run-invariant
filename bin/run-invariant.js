@@ -8,6 +8,7 @@ const {
   buildEvidencePacket,
   canonicalJson,
 } = require('../src/report');
+const { runSubject } = require('../src/subject');
 
 const runInvariantRoot = path.resolve(__dirname, '..');
 const protocolPath = path.join(
@@ -58,6 +59,28 @@ function printSummary(packet, evidenceState) {
   );
 }
 
+function printSubjectSummary(packet) {
+  const lines = [
+    `RunInvariant subject contract ${packet.contract.version}`,
+    `Subject: ${packet.subject.name} ${packet.subject.version} (${packet.subject.implementation})`,
+    `Protocol: ${packet.protocol.version} (${packet.protocol.status} legacy baseline)`,
+    `Subject conformance: ${packet.conformance.passed}/${packet.conformance.total} cases`,
+    `Request: ${packet.request_sha256}`,
+  ];
+  if (packet.conformance.failed > 0) {
+    const failedIds = packet.conformance.cases
+      .filter(caseResult => !caseResult.passed)
+      .map(caseResult => caseResult.id);
+    lines.push(`Failed cases: ${failedIds.join(', ')}`);
+    lines.push('Recovery: rerun subject mode with --json to inspect expected and actual decisions.');
+  }
+  lines.push(
+    'Claim boundary: normalized decision conformance only; this does not prove a governed agent loop.',
+    '',
+  );
+  process.stdout.write(lines.join('\n'));
+}
+
 function checkEvidence(packet) {
   if (!fs.existsSync(evidencePath)) return false;
 
@@ -77,11 +100,13 @@ function printHelp() {
     [
       'Usage: run-invariant <mode>',
       '       node bin/run-invariant.js <mode>',
+      '       run-invariant subject [--json] -- <executable> [arguments...]',
       '',
       'Modes:',
       '  --check  Compare a fresh packet with committed evidence.',
       '  --write  Replace committed evidence with a fresh packet.',
       '  --json   Print a fresh packet as JSON without writing.',
+      '  subject  Test an external process against the frozen cases.',
       '',
     ].join('\n'),
   );
@@ -89,6 +114,41 @@ function printHelp() {
 
 function main(argv) {
   const mode = argv[0] || '--check';
+  if (mode === 'subject') {
+    const separator = argv.indexOf('--');
+    const options = argv.slice(1, separator < 0 ? argv.length : separator);
+    const json = options.includes('--json');
+    if (
+      separator < 0
+      || separator === argv.length - 1
+      || options.some(option => option !== '--json')
+      || options.filter(option => option === '--json').length > 1
+    ) {
+      process.stderr.write(
+        'Subject usage: run-invariant subject [--json] -- <executable> [arguments...]\n',
+      );
+      process.exitCode = 2;
+      return;
+    }
+
+    try {
+      const packet = runSubject({
+        command: argv.slice(separator + 1),
+        protocol: JSON.parse(fs.readFileSync(protocolPath)),
+        fixtures: JSON.parse(fs.readFileSync(fixturesPath)),
+        protocolBytes: fs.readFileSync(protocolPath),
+        fixtureBytes: fs.readFileSync(fixturesPath),
+      });
+      if (json) process.stdout.write(canonicalJson(packet));
+      else printSubjectSummary(packet);
+      if (packet.conformance.failed > 0) process.exitCode = 1;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      process.stderr.write(`Subject contract error: ${message}\n`);
+      process.exitCode = 1;
+    }
+    return;
+  }
   if (!['--check', '--write', '--json', '--help'].includes(mode)) {
     process.stderr.write(`Unknown mode: ${mode}\n`);
     printHelp();

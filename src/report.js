@@ -120,4 +120,5 @@ function buildEvidencePacket({
 module.exports = {
   buildEvidencePacket,
   canonicalJson,
+  sha256,
 };
