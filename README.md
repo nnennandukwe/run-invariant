@@ -151,6 +151,14 @@ The project and CLI are now RunInvariant. New machine-behavior changes require
 a new versioned protocol and fixture file; frozen `0.1.0` artifacts will not be
 relabeled in place. See [`protocol/README.md`](./protocol/README.md).
 
+## Shared research
+
+The [harness engineering research review](https://github.com/nnennandukwe/governed-agent-autonomy-patterns/blob/84fb12dae4fed69c684e59eb52c9272b14acac30/docs/research/2026-09-10-harness-engineering-review.md)
+is the shared research snapshot dated September 10, 2026 for GAAP, ThreadLoop,
+and RunInvariant. Track adoption decisions, prerequisites, and proposed
+experiments in the [shared research tracker](https://github.com/nnennandukwe/governed-agent-autonomy-patterns/issues/29).
+Research candidates are not accepted roadmap commitments.
+
 ## Development
 
 Run all tests and reproduce committed reference evidence before submitting a
