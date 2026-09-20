@@ -33,7 +33,8 @@ function validateDomainResult(operation, input, result) {
   function envelope(value, payload, hash) {
     requireEqual(value[hash], domainDigest(value[payload]), `Embedded ${hash}`);
   }
-  function action(value) {
+  function action(value, binding) {
+    requireEqual(value.request.binding, binding, 'Action binding');
     envelope(value, 'request', 'request_digest');
     const request = value.request;
     requireEqual(
@@ -52,17 +53,17 @@ function validateDomainResult(operation, input, result) {
     const decision = result.decision.decision;
     requireEqual(decision.input_digest, domainDigest(input), 'Decision input digest');
     requireEqual(decision.binding, input.binding, 'Decision binding');
-    if (decision.action_request) action(decision.action_request);
+    if (decision.action_request) action(decision.action_request, decision.binding);
     if (decision.outcome === 'blocked') {
       for (const reason of decision.reasons)
-        if (reason.code === 'IDEMPOTENCY_CONFLICT') action(reason.request);
+        if (reason.code === 'IDEMPOTENCY_CONFLICT') action(reason.request, decision.binding);
     }
   }
   if (result.status === 'execution') {
     if (result.steps.length !== input.steps.length)
       throw new Error('Execution result omits trace steps');
     const execution = result.projection.controller.execution;
-    if (execution.request) action(execution.request);
+    if (execution.request) action(execution.request, input.initial.request.request.binding);
   }
 }
 

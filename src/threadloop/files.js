@@ -4,6 +4,8 @@ const path = require('node:path');
 const { MAX_BYTES } = require('./codec');
 
 function readArtifact(root, relative) {
+  if (typeof relative !== 'string' || relative.includes('\\') || relative.includes(':'))
+    throw new Error(`Unsafe artifact path: ${relative}`);
   const parts = relative.split('/');
   if (parts.some((part) => !part || part === '.' || part === '..') || path.isAbsolute(relative))
     throw new Error(`Unsafe artifact path: ${relative}`);

@@ -208,9 +208,9 @@ test('rehashed nested decision and action digests do not bypass independent chec
   }
 });
 
-function copyCorpus(t) {
+function copyCorpus(testContext) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'run-invariant-threadloop-'));
-  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  testContext.after(() => fs.rmSync(root, { recursive: true, force: true }));
   fs.mkdirSync(path.join(root, 'docs'), { recursive: true });
   fs.cpSync(path.join(checkout, 'docs/contracts'), path.join(root, 'docs/contracts'), {
     recursive: true,
@@ -233,8 +233,8 @@ for (const mutation of [
   'version',
   'rehashed-expectation',
 ]) {
-  test(`corpus ${mutation} fails before any subject process starts`, async (t) => {
-    const root = copyCorpus(t);
+  test(`corpus ${mutation} fails before any subject process starts`, async (testContext) => {
+    const root = copyCorpus(testContext);
     const directory = path.join(root, 'docs/contracts/controller-conformance-v0.1');
     const fixturePath = path.join(directory, 'fixtures/case_001.json');
     const fixture = JSON.parse(fs.readFileSync(fixturePath));
@@ -297,9 +297,9 @@ for (const mutation of [
   });
 }
 
-test('CLI emits a separate packet and rejects unsupported or incomplete configuration', (t) => {
+test('CLI emits a separate packet and rejects unsupported or incomplete configuration', (testContext) => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'run-invariant-cli-threadloop-'));
-  t.after(() => fs.rmSync(root, { recursive: true, force: true }));
+  testContext.after(() => fs.rmSync(root, { recursive: true, force: true }));
   const identity = path.join(root, 'identity.json');
   fs.writeFileSync(identity, JSON.stringify(subject));
   const cli = path.resolve(__dirname, '../../bin/run-invariant.js');
@@ -378,8 +378,8 @@ test('wrong operation result and missing execution steps are protocol errors', (
   );
 });
 
-test('underflowed corpus number fails before launch despite identical JSON.parse digest (7df65ae8)', async (t) => {
-  const root = copyCorpus(t);
+test('underflowed corpus number fails before launch despite identical JSON.parse digest (7df65ae8)', async (testContext) => {
+  const root = copyCorpus(testContext);
   const file = path.join(root, 'docs/contracts/controller-conformance-v0.1/fixtures/case_029.json');
   const original = fs.readFileSync(file, 'utf8');
   const altered = original.replace('"expected_revision": 0,', '"expected_revision": 1e-324,');
@@ -438,4 +438,46 @@ test('passing prose and oversized failures do not accumulate full responses (d89
   assert.equal(exhausted.status, 'nonconforming');
   assert.equal('actual' in exhausted, false);
   assert.match(exhausted.details_omitted, /budget/);
+});
+
+test('rehashed action bindings cannot escape their enclosing operation (3d57f874)', () => {
+  for (const kind of ['decision', 'conflict', 'execution']) {
+    const fixture = byId(
+      kind === 'execution' ? 'case_029' : kind === 'conflict' ? 'case_024' : 'case_004',
+    );
+    const result = structuredClone(fixture.expected);
+    let envelope;
+    if (kind === 'decision') envelope = result.decision.decision.action_request;
+    if (kind === 'conflict') {
+      envelope = structuredClone(byId('case_004').expected.decision.decision.action_request);
+      const reason = result.decision.decision.reasons[0];
+      result.decision.decision.reasons[0] = {
+        code: 'IDEMPOTENCY_CONFLICT',
+        message: reason.message,
+        recovery: reason.recovery,
+        request: envelope,
+      };
+    }
+    if (kind === 'execution') envelope = result.projection.controller.execution.request;
+    envelope.request.binding.source_state = 'different_state';
+    envelope.request.idempotency_key = domainDigest({
+      schema_version: '0.1',
+      binding: envelope.request.binding,
+      action_id: envelope.request.action_id,
+    });
+    envelope.request_digest = domainDigest(envelope.request);
+    if (result.status === 'decision')
+      result.decision.decision_digest = domainDigest(result.decision.decision);
+    const request = buildRequest(corpus, fixture);
+    assert.throws(
+      () =>
+        validateResponse(
+          corpus,
+          request,
+          Buffer.from(canonical(response(request, result))),
+          subject,
+        ),
+      /Action binding/,
+    );
+  }
 });

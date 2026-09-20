@@ -121,7 +121,7 @@ stdout through descendants cannot indefinitely extend the deadline.
 The harness validates response schema, canonical bytes, response digest, request
 correlation, and pinned subject identity before comparing results. It independently
 checks compiled-graph, decision, Action Request, idempotency, and decision-input
-digests using the historical ThreadLoop domain preimages. Digest references in
+digests using the historical ThreadLoop domain preimages. Embedded Action Requests must match their enclosing decision binding or the execution scenario's initial request binding. Digest references in
 execution projections have no embedded preimage; their exact values are compared
 against the pinned expectation. It does not reimplement ThreadLoop's compiler,
 controller selector, execution model, or production authority checks.
