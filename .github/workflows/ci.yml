@@ -29,7 +29,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: nnennandukwe/threadloop
-          ref: a7e857cf1d9f562d597c2256365078b712c5288b
+          ref: 1de92568cba12591091aa37a97ad64282803263f
           path: .threadloop-corpus
           persist-credentials: false
 

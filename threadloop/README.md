@@ -20,7 +20,7 @@ ThreadLoop artifacts (network access is needed only for this acquisition):
 
 ```bash
 git clone https://github.com/nnennandukwe/threadloop.git .threadloop-corpus
-git -C .threadloop-corpus checkout --detach a7e857cf1d9f562d597c2256365078b712c5288b
+git -C .threadloop-corpus checkout --detach 1de92568cba12591091aa37a97ad64282803263f
 THREADLOOP_CHECKOUT="$PWD/.threadloop-corpus" npm run test:threadloop
 ```
 
@@ -94,7 +94,7 @@ packet contains case diagnostics and identities.
 
 ## Wire and comparison rules
 
-The [pinned ThreadLoop specification](https://github.com/nnennandukwe/threadloop/blob/a7e857cf1d9f562d597c2256365078b712c5288b/docs/contracts/controller-conformance-v0.1/README.md)
+The [pinned ThreadLoop specification](https://github.com/nnennandukwe/threadloop/blob/1de92568cba12591091aa37a97ad64282803263f/docs/contracts/controller-conformance-v0.1/README.md)
 and its JSON schemas are normative. Independent protocol, request/response schema,
 fixture, manifest, compatibility, canonicalization, and digest identities are
 checked without negotiation or fallback.

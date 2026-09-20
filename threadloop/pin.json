@@ -1,14 +1,14 @@
 {
   "repository": "https://github.com/nnennandukwe/threadloop",
-  "revision": "a7e857cf1d9f562d597c2256365078b712c5288b",
+  "revision": "1de92568cba12591091aa37a97ad64282803263f",
   "status": "proposed-in-threadloop-pr-128",
   "corpus_digest": "11620588c6f4b39353ea9f77e361a50b5cb0dc970410b1ac10aa8bef13efad84",
   "schemas": {
     "compatibility.schema.json": "0dd444965f6f437c2738c80e9f1973f4933e396aa9e29e6300ee4cfa2bb71cc3",
-    "execution-scenario.schema.json": "eafcdceac2a2774b32d9dc373e15b71d1c1bff4ebf0a4eadf8432ae92ab77afe",
-    "fixture.schema.json": "5a9cd55b3155cc594a8cec77a984a1e4daf40caf3b809158af76625d1f473b26",
+    "execution-scenario.schema.json": "3d32570877088dc29608cdddb09c6804a23d421ba2ea528a19a62a80f75803d9",
+    "fixture.schema.json": "7965664420b1fcd8c70fb1b4c13a68bb0be84b349653fd914263e9afde5fc9ae",
     "manifest.schema.json": "7bb7fa1348f8a4c3e60814678ca6ef6a9d5ee398d603bc56170ba0137b5f6e30",
-    "request.schema.json": "c5820d9bcffcb516bfff3120dd290a91b4978e2b5b3fe28ada7a1a0ba6143637",
+    "request.schema.json": "d1ab90b30435c184fcda6e3081930d676eea1059bf2af6c1f84e1971ccad77d9",
     "response.schema.json": "04392f24e64fd73e599aad39c43747336c3e3b01e9e35d8d970b190d1daab67a",
     "shared.schema.json": "5d07767b44ccd66e08fa2ff2a1ca2c5d81fd54319924b4a63884ca056e9f1802",
     "source.schema.json": "4fbc818d2920d5fa4e1a24f987b4783206009a94103263151f321702ea1b7fc8"
