@@ -171,6 +171,19 @@ process.stdin.on('end', () => {
     };
     result.decision.decision_digest = domain(result.decision.decision);
   }
+  if (
+    mode === 'large-prose' &&
+    result.status === 'decision' &&
+    result.decision.decision.outcome === 'blocked'
+  ) {
+    result.decision.decision.reasons[0].message = 'x'.repeat(128 * 1024);
+    result.decision.decision_digest = domain(result.decision.decision);
+  }
+  if (mode === 'large-invalid')
+    response.result = {
+      status: 'invalid',
+      diagnostics: [{ code: 'x'.repeat(128 * 1024), path: '$', identifier: null }],
+    };
   const envelope = { response, response_digest: hash(canonical(response)) };
   let output = canonical(envelope);
   if (first && mode === 'wrong-digest') {

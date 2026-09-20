@@ -1,4 +1,5 @@
 'use strict';
+// Protocol-required Unicode test data is intentionally exempt from English-only application text rules.
 const assert = require('node:assert/strict');
 const test = require('node:test');
 const { invoke } = require('../src/threadloop/process');
@@ -76,5 +77,19 @@ test('Uint8Array stdin is accepted and bounded by byte length', async () => {
       stderr_bytes: 100,
     }),
     /STDIN_LIMIT/,
+  );
+});
+
+test('early stdin closure remains a failed complete-request delivery', async () => {
+  await assert.rejects(
+    invoke(
+      [
+        process.execPath,
+        '-e',
+        'process.stdin.destroy();process.stdout.write("{}");setTimeout(()=>process.exit(0),100)',
+      ],
+      Buffer.alloc(1024 * 1024, 32),
+    ),
+    /STDIN/,
   );
 });

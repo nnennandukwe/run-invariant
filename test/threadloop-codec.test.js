@@ -1,4 +1,5 @@
 'use strict';
+// Protocol-required Unicode test data is intentionally exempt from English-only application text rules.
 
 const assert = require('node:assert/strict');
 const test = require('node:test');

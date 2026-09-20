@@ -38,7 +38,7 @@ duplicate JSON keys, invalid Unicode, unsafe or lossy numeric literals, missing 
 path escapes, and symlinks below the checkout root fail closed. Formatting-only
 fixture changes preserve identity; upstream and conformance schema hashes bind
 literal file bytes. Inputs intentionally invalid under domain rules remain valid
-negative tests. There is no automatic repair or expectation-update command.
+negative tests. Artifact reads use bounded regular-file handles, so growth after a size check cannot allocate the whole replacement. Use a stable checkout during validation; these checks are not an OS filesystem sandbox. There is no automatic repair or expectation-update command.
 
 ## Run an executable
 
@@ -102,14 +102,16 @@ RunInvariant pretty-printed, newline-inclusive protocol is untouched.
 
 Runner limits recorded in every packet:
 
-| Resource | Limit |
-| --- | --- |
-| Request / stdout bytes | 16 MiB plus one framing LF |
-| Canonical content | 16 MiB |
-| Nesting / JSON values | 64 / 1,000,000 |
-| Stderr | 1 MiB per process |
-| Deadline | 10 seconds by default; configurable up to 60 seconds |
-| Termination cleanup wait | At most one additional second after abort |
+| Resource                                 | Limit                                                |
+| ---------------------------------------- | ---------------------------------------------------- |
+| Request / stdout bytes                   | 16 MiB plus one framing LF                           |
+| Canonical content                        | 16 MiB                                               |
+| Nesting / JSON values                    | 64 / 1,000,000                                       |
+| Stderr                                   | 1 MiB per process                                    |
+| Deadline                                 | 10 seconds by default; configurable up to 60 seconds |
+| Termination cleanup wait                 | At most one additional second after abort            |
+| Retained nonconforming result details    | 64 KiB per case, 2 MiB across the suite              |
+| Diagnostic / identity / command metadata | 4 KiB per diagnostic / 16 KiB / 64 KiB               |
 
 Timeout and output overflow trigger SIGKILL. POSIX launches a separate process
 group and kills that group; Windows kills the direct child. Escaping process groups
@@ -144,8 +146,7 @@ input/request digest and one of:
 
 Valid responses record their response digest. Completed transport captures also
 record raw stdout/stderr hashes. Invalid response digests remain null; a claimed
-but invalid digest is never presented as verified. Nonconforming cases retain both
-expected and actual results. A valid negative domain result can pass its case;
+but invalid digest is never presented as verified. Passing cases retain result kind/outcome and digests, not full results. Nonconforming cases retain expected and actual results within the recorded report budget; larger details are explicitly omitted with their canonical digests. Diagnostic text is truncated explicitly at its byte limit. These reporting limits do not bypass full response validation or change pass/fail status. A valid negative domain result can pass its case;
 process and protocol failures never count as controller decisions or passes.
 
 The packet establishes only the named subject's observed behavior on this frozen

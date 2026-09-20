@@ -13,8 +13,24 @@ const {
   buildRequest,
 } = require('./corpus');
 
+const reportLimits = Object.freeze({
+  case_result_bytes: 64 * 1024,
+  total_result_bytes: 2 * 1024 * 1024,
+  diagnostic_bytes: 4096,
+  identity_bytes: 16 * 1024,
+  command_bytes: 64 * 1024,
+});
+
+function diagnostic(message) {
+  const bytes = Buffer.from(message);
+  let text = bytes.subarray(0, reportLimits.diagnostic_bytes).toString('utf8');
+  while (Buffer.byteLength(text) > reportLimits.diagnostic_bytes) text = text.slice(0, -1);
+  return { diagnostic: text, diagnostic_truncated: bytes.length > reportLimits.diagnostic_bytes };
+}
+
 function validateSubject(subject) {
-  canonical(subject);
+  if (Buffer.byteLength(canonical(subject)) > reportLimits.identity_bytes)
+    throw new Error('Subject identity exceeds report limit');
   if (!subject || Array.isArray(subject) || typeof subject !== 'object')
     throw new Error('Subject identity must be an object');
   requireEqual(
@@ -40,7 +56,14 @@ function validateResponse(corpus, request, bytes, subject) {
   return response;
 }
 
-async function runCase(corpus, fixture, command, subject, limits) {
+async function runCase(
+  corpus,
+  fixture,
+  command,
+  subject,
+  limits,
+  retention = { remaining: reportLimits.total_result_bytes },
+) {
   const request = buildRequest(corpus, fixture);
   const record = {
     id: fixture.id,
@@ -55,7 +78,7 @@ async function runCase(corpus, fixture, command, subject, limits) {
   try {
     output = await invoke(command, Buffer.from(canonical(request)), limits);
   } catch (error) {
-    return { ...record, status: 'transport_error', diagnostic: error.message };
+    return { ...record, status: 'transport_error', ...diagnostic(error.message) };
   }
   record.stdout_sha256 = sha256(output.stdout);
   record.stderr_sha256 = sha256(output.stderr);
@@ -63,16 +86,31 @@ async function runCase(corpus, fixture, command, subject, limits) {
   try {
     response = validateResponse(corpus, request, output.stdout, subject);
   } catch (error) {
-    return { ...record, status: 'protocol_error', diagnostic: error.message };
+    return { ...record, status: 'protocol_error', ...diagnostic(error.message) };
   }
   record.response_digest = response.response_digest;
   const actual = response.response.result;
   const matches = canonical(machineResult(actual)) === canonical(machineResult(fixture.expected));
-  return {
+  const summary = {
     ...record,
     status: matches ? 'passed' : 'nonconforming',
-    actual,
-    ...(matches ? {} : { expected: fixture.expected }),
+    result_status: actual.status,
+    controller_outcome: actual.status === 'decision' ? actual.decision.decision.outcome : null,
+  };
+  if (matches) return summary;
+  const actualBytes = canonical(actual);
+  const expectedBytes = canonical(fixture.expected);
+  const size = Buffer.byteLength(actualBytes) + Buffer.byteLength(expectedBytes);
+  if (size <= reportLimits.case_result_bytes && size <= retention.remaining) {
+    retention.remaining -= size;
+    return { ...summary, actual, expected: fixture.expected };
+  }
+  return {
+    ...summary,
+    details_omitted:
+      'Result details exceed per-case or aggregate report budget; rerun the subject to inspect full output.',
+    actual_result_digest: sha256(actualBytes),
+    expected_result_digest: sha256(expectedBytes),
   };
 }
 
@@ -98,6 +136,8 @@ async function runThreadLoop({
   ) {
     throw new Error('Command must be an executable and argument array');
   }
+  if (Buffer.byteLength(canonical(command)) > reportLimits.command_bytes)
+    throw new Error('Command exceeds report limit');
   if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 60_000)
     throw new Error('timeout-ms must be an integer from 1 to 60000');
   const corpus = loadCorpus(checkout); // Complete validation precedes the first effect.
@@ -105,8 +145,9 @@ async function runThreadLoop({
   // Build every request before launch: no later oversized input can start a partial suite.
   for (const fixture of corpus.fixtures) buildRequest(corpus, fixture);
   const cases = [];
+  const retention = { remaining: reportLimits.total_result_bytes };
   for (const fixture of corpus.fixtures) {
-    const result = await runCase(corpus, fixture, command, subject, limits);
+    const result = await runCase(corpus, fixture, command, subject, limits, retention);
     cases.push(result);
     onCase({ id: result.id, status: result.status });
   }
@@ -132,6 +173,7 @@ async function runThreadLoop({
     runner: {
       command: [...command],
       limits,
+      report_limits: reportLimits,
       shell: false,
       process_cleanup:
         process.platform === 'win32' ? 'direct-child-SIGKILL' : 'POSIX-process-group-SIGKILL',
@@ -154,4 +196,4 @@ async function runThreadLoop({
   };
 }
 
-module.exports = { validateSubject, validateResponse, runCase, runThreadLoop };
+module.exports = { reportLimits, validateSubject, validateResponse, runCase, runThreadLoop };

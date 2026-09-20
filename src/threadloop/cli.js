@@ -1,6 +1,7 @@
 'use strict';
-const fs = require('node:fs');
-const { MAX_BYTES, parseJson } = require('./codec');
+const path = require('node:path');
+const { readArtifact } = require('./files');
+const { parseJson } = require('./codec');
 const { runThreadLoop } = require('./runner');
 
 const usage =
@@ -34,10 +35,10 @@ async function main(argv) {
     }
     for (const name of ['--checkout', '--subject', '--subject-kind'])
       if (!options[name]) throw new Error(`Required option: ${name}`);
-    const metadata = fs.lstatSync(options['--subject']);
-    if (!metadata.isFile() || metadata.size > MAX_BYTES)
-      throw new Error('Subject identity must be a bounded regular JSON file');
-    const subject = parseJson(fs.readFileSync(options['--subject']));
+    const identityPath = path.resolve(options['--subject']);
+    const subject = parseJson(
+      readArtifact(path.dirname(identityPath), path.basename(identityPath)),
+    );
     const timeoutMs =
       options['--timeout-ms'] === undefined ? undefined : Number(options['--timeout-ms']);
     const packet = await runThreadLoop({
@@ -48,7 +49,7 @@ async function main(argv) {
       timeoutMs,
       onCase: ({ id, status }) => process.stderr.write(`${id}: ${status}\n`),
     });
-    if (options['--json']) process.stdout.write(`${JSON.stringify(packet, null, 2)}\n`);
+    if (options['--json']) process.stdout.write(`${JSON.stringify(packet)}\n`);
     else {
       const result = packet.conformance;
       process.stdout.write(

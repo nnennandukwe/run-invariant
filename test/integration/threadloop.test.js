@@ -94,8 +94,8 @@ test('synthetic process exercises all operations and six outcomes without contro
   assert.equal(
     new Set(
       packet.conformance.cases
-        .filter((item) => item.actual.status === 'decision')
-        .map((item) => item.actual.decision.decision.outcome),
+        .filter((item) => item.result_status === 'decision')
+        .map((item) => item.controller_outcome),
     ).size,
     6,
   );
@@ -402,4 +402,40 @@ test('underflowed corpus number fails before launch despite identical JSON.parse
     /integer/,
   );
   assert.equal(fs.existsSync(sentinel), false);
+});
+
+test('passing prose and oversized failures do not accumulate full responses (d8924ee0)', async () => {
+  const passing = await runCase(
+    corpus,
+    byId('case_024'),
+    command('large-prose'),
+    subject,
+    defaults,
+  );
+  assert.equal(passing.status, 'passed');
+  assert.equal('actual' in passing, false);
+  assert.ok(JSON.stringify(passing).length < 2048);
+  const failed = await runCase(
+    corpus,
+    byId('case_001'),
+    command('large-invalid'),
+    subject,
+    defaults,
+  );
+  assert.equal(failed.status, 'nonconforming');
+  assert.equal('actual' in failed, false);
+  assert.match(failed.actual_result_digest, /^[a-f0-9]{64}$/);
+  assert.ok(JSON.stringify(failed).length < 2048);
+  const retention = { remaining: 0 };
+  const exhausted = await runCase(
+    corpus,
+    byId('case_033'),
+    command('untrusted-receipt'),
+    subject,
+    defaults,
+    retention,
+  );
+  assert.equal(exhausted.status, 'nonconforming');
+  assert.equal('actual' in exhausted, false);
+  assert.match(exhausted.details_omitted, /budget/);
 });

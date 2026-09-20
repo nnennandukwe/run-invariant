@@ -1,11 +1,12 @@
 'use strict';
 
 const fs = require('node:fs');
+const { readArtifact } = require('./files');
 const path = require('node:path');
 const Ajv2020 = require('ajv/dist/2020');
 const addFormats = require('ajv-formats');
 const pin = require('../../threadloop/pin.json');
-const { MAX_BYTES, canonical, parseJson, sha256, digest, domainDigest } = require('./codec');
+const { canonical, parseJson, sha256, digest, domainDigest } = require('./codec');
 
 const profiles = Object.freeze({
   protocol: 'threadloop.controller-conformance/0.1',
@@ -20,26 +21,6 @@ const relativeRoot = 'docs/contracts/controller-conformance-v0.1';
 function requireEqual(actual, expected, label) {
   if (canonical(actual) !== canonical(expected))
     throw new Error(`${label}: identity or content mismatch`);
-}
-
-function readArtifact(root, relative) {
-  const parts = relative.split('/');
-  if (parts.some((part) => !part || part === '.' || part === '..') || path.isAbsolute(relative)) {
-    throw new Error(`Unsafe artifact path: ${relative}`);
-  }
-  let current = root;
-  for (const part of parts.slice(0, -1)) {
-    current = path.join(current, part);
-    if (!fs.lstatSync(current).isDirectory())
-      throw new Error(`${relative}: expected real directory`);
-  }
-  current = path.join(current, parts.at(-1));
-  const stat = fs.lstatSync(current);
-  if (!stat.isFile() || stat.size > MAX_BYTES + 1)
-    throw new Error(`${relative}: expected bounded regular file`);
-  const bytes = fs.readFileSync(current);
-  if (bytes.length > MAX_BYTES + 1) throw new Error(`${relative}: byte limit exceeded`);
-  return bytes;
 }
 
 function validateDomainResult(operation, input, result) {
