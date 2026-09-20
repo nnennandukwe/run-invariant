@@ -35,13 +35,16 @@ function canonical(value) {
       return token(String(item));
     }
     if (item === null || typeof item === 'boolean') return token(JSON.stringify(item));
-    if (typeof item !== 'object' || isProxy(item)) throw new Error('Expected plain JSON values');
+    if (typeof item !== 'object' || isProxy(item))
+      throw new Error('Expected plain JSON values');
     if (seen.has(item)) throw new Error('JSON cannot contain cycles or shared references');
     seen.add(item);
     const array = Array.isArray(item);
     const prototype = Object.getPrototypeOf(item);
     if (
-      array ? prototype !== Array.prototype : prototype !== Object.prototype && prototype !== null
+      array
+        ? prototype !== Array.prototype
+        : prototype !== Object.prototype && prototype !== null
     ) {
       throw new Error('Expected plain JSON objects');
     }
@@ -237,4 +240,14 @@ function domainDigest(value) {
   return sha256(JSON.stringify(ordered(value)));
 }
 
-module.exports = { MAX_BYTES, canonical, parseJson, parseMessage, sha256, digest, domainDigest };
+module.exports = {
+  MAX_BYTES,
+  MAX_DEPTH,
+  MAX_VALUES,
+  canonical,
+  parseJson,
+  parseMessage,
+  sha256,
+  digest,
+  domainDigest,
+};

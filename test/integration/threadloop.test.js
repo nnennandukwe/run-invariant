@@ -218,6 +218,15 @@ function copyCorpus(testContext) {
   return root;
 }
 for (const mutation of [
+  'shared-change',
+  'shared-unused',
+  'shared-cycle',
+  'shared-missing',
+  'shared-duplicate-key',
+  'shared-link',
+  'shared-version',
+  'source-version',
+  'reference-missing',
   'input',
   'expectation',
   'metadata',
@@ -237,17 +246,46 @@ for (const mutation of [
     const root = copyCorpus(testContext);
     const directory = path.join(root, 'docs/contracts/controller-conformance-v0.1');
     const fixturePath = path.join(directory, 'fixtures/case_001.json');
-    const fixture = JSON.parse(fs.readFileSync(fixturePath));
+    const sharedPath = path.join(directory, 'shared.json');
+    const shared = JSON.parse(fs.readFileSync(sharedPath));
+    const sharedName = Object.keys(shared.values)[0];
+    if (mutation === 'shared-change') shared.values[sharedName] = null;
+    if (mutation === 'shared-unused') shared.values.unused = null;
+    if (mutation === 'shared-cycle') shared.values[sharedName] = { $fixture_ref: sharedName };
+    if (mutation === 'shared-version') shared.schema = 'unsupported/99';
+    if (['shared-change', 'shared-unused', 'shared-cycle', 'shared-version'].includes(mutation))
+      fs.writeFileSync(sharedPath, JSON.stringify(shared));
+    if (mutation === 'shared-missing') fs.unlinkSync(sharedPath);
+    if (mutation === 'shared-duplicate-key')
+      fs.writeFileSync(sharedPath, '{"schema":"duplicate",' + JSON.stringify(shared).slice(1));
+    if (mutation === 'shared-link') {
+      const target = path.join(root, 'shared.json');
+      fs.renameSync(sharedPath, target);
+      fs.symlinkSync(target, sharedPath);
+    }
+    if (['source-version', 'reference-missing'].includes(mutation)) {
+      const source = JSON.parse(fs.readFileSync(fixturePath));
+      if (mutation === 'source-version') source.schema = 'unsupported/99';
+      else source.fixture.input = { $fixture_ref: 'missing' };
+      fs.writeFileSync(fixturePath, JSON.stringify(source));
+    }
+
+    const fixture = structuredClone(byId('case_001'));
+    const writeFixture = () =>
+      fs.writeFileSync(
+        fixturePath,
+        JSON.stringify({ schema: 'threadloop.conformance-source/0.1', fixture }),
+      );
     const manifestPath = path.join(directory, 'manifest.json');
     const manifest = JSON.parse(fs.readFileSync(manifestPath));
     if (mutation === 'input') fixture.input.profile.id = 'changed';
-    if (mutation === 'expectation') fixture.expected.compiled_graph.graph_digest = '0'.repeat(64);
+    if (mutation === 'expectation')
+      fixture.expected.compiled_graph.graph_digest = '0'.repeat(64);
     if (mutation === 'metadata') fixture.title += ' changed';
-    if (['input', 'expectation', 'metadata'].includes(mutation))
-      fs.writeFileSync(fixturePath, JSON.stringify(fixture));
+    if (['input', 'expectation', 'metadata'].includes(mutation)) writeFixture();
     if (mutation === 'rehashed-expectation') {
       fixture.expected.compiled_graph.graph_digest = '0'.repeat(64);
-      fs.writeFileSync(fixturePath, JSON.stringify(fixture));
+      writeFixture();
       manifest.manifest.entries[0].fixture_digest = digest(fixture);
       manifest.corpus_digest = digest(manifest.manifest);
       fs.writeFileSync(manifestPath, JSON.stringify(manifest));
@@ -256,7 +294,10 @@ for (const mutation of [
     if (mutation === 'unlisted')
       fs.writeFileSync(path.join(directory, 'fixtures/case_999.json'), '{}');
     if (mutation === 'fixture-duplicate-key')
-      fs.writeFileSync(fixturePath, '{"title":"duplicate",' + JSON.stringify(fixture).slice(1));
+      fs.writeFileSync(
+        fixturePath,
+        '{"schema":"duplicate",' + fs.readFileSync(fixturePath, 'utf8').slice(1),
+      );
     if (mutation === 'duplicate')
       manifest.manifest.entries.push(structuredClone(manifest.manifest.entries[0]));
     if (mutation === 'escaped-path') manifest.manifest.entries[0].path = '../case_001.json';
@@ -339,9 +380,13 @@ test('CLI emits a separate packet and rejects unsupported or incomplete configur
     [...args, '--timeout-ms', '0'],
     [...args, '--subject-kind', 'controller'],
   ]) {
-    const failed = spawnSync(process.execPath, [cli, ...invalid, '--', ...command('conforming')], {
-      encoding: 'utf8',
-    });
+    const failed = spawnSync(
+      process.execPath,
+      [cli, ...invalid, '--', ...command('conforming')],
+      {
+        encoding: 'utf8',
+      },
+    );
     assert.equal(failed.status, 2, failed.stderr);
     assert.match(failed.stderr, /Recovery:/);
   }
@@ -380,7 +425,7 @@ test('wrong operation result and missing execution steps are protocol errors', (
 
 test('underflowed corpus number fails before launch despite identical JSON.parse digest (7df65ae8)', async (testContext) => {
   const root = copyCorpus(testContext);
-  const file = path.join(root, 'docs/contracts/controller-conformance-v0.1/fixtures/case_029.json');
+  const file = path.join(root, 'docs/contracts/controller-conformance-v0.1/shared.json');
   const original = fs.readFileSync(file, 'utf8');
   const altered = original.replace('"expected_revision": 0,', '"expected_revision": 1e-324,');
   assert.notEqual(original, altered);

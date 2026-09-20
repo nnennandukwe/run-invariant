@@ -32,6 +32,24 @@ function domain(value) {
   }
   return hash(JSON.stringify(ordered(value)));
 }
+// Test-only lookup of trusted, pinned assets; production loading validates these first.
+const corpusDirectory = path.join(checkout, 'docs/contracts/controller-conformance-v0.1');
+const shared = JSON.parse(fs.readFileSync(path.join(corpusDirectory, 'shared.json'))).values;
+function readFixture(id) {
+  function expand(value) {
+    if (Array.isArray(value)) return value.map(expand);
+    if (value && typeof value === 'object') {
+      if (Object.hasOwn(value, '$fixture_ref')) return expand(shared[value.$fixture_ref]);
+      return Object.fromEntries(
+        Object.entries(value).map(([key, item]) => [key, expand(item)]),
+      );
+    }
+    return value;
+  }
+  return expand(
+    JSON.parse(fs.readFileSync(path.join(corpusDirectory, 'fixtures', id + '.json'))).fixture,
+  );
+}
 let input = '';
 process.stdin.setEncoding('utf8');
 process.stdin.on('data', (chunk) => {
@@ -58,15 +76,7 @@ process.stdin.on('end', () => {
     hash(canonical(request.input)) !== request.input_digest
   )
     throw new Error('Bad request digest');
-  const fixture = JSON.parse(
-    fs.readFileSync(
-      path.join(
-        checkout,
-        'docs/contracts/controller-conformance-v0.1/fixtures',
-        request.case_id + '.json',
-      ),
-    ),
-  );
+  const fixture = readFixture(request.case_id);
   const result = fixture.expected;
   const subject = {
     name: 'synthetic-threadloop',
@@ -131,11 +141,7 @@ process.stdin.on('end', () => {
   if (mode === 'overwrite-conflict' && request.case_id === 'case_035')
     result.steps[0].disposition = 'applied';
   if (mode === 'arbitrary-remedy' && request.case_id === 'case_024') {
-    const template = JSON.parse(
-      fs.readFileSync(
-        path.join(checkout, 'docs/contracts/controller-conformance-v0.1/fixtures/case_004.json'),
-      ),
-    ).expected;
+    const template = readFixture('case_004').expected;
     const decision = template.decision.decision;
     decision.binding = request.input.binding;
     decision.input_digest = domain(request.input);
@@ -150,11 +156,7 @@ process.stdin.on('end', () => {
     result.decision = { decision, decision_digest: domain(decision) };
   }
   if (mode === 'revive-proof' && ['case_026', 'case_027'].includes(request.case_id)) {
-    const template = JSON.parse(
-      fs.readFileSync(
-        path.join(checkout, 'docs/contracts/controller-conformance-v0.1/fixtures/case_008.json'),
-      ),
-    ).expected;
+    const template = readFixture('case_008').expected;
     const decision = template.decision.decision;
     decision.binding = request.input.binding;
     decision.input_digest = domain(request.input);

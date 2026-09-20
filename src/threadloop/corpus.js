@@ -5,6 +5,7 @@ const { readArtifact } = require('./files');
 const path = require('node:path');
 const Ajv2020 = require('ajv/dist/2020');
 const addFormats = require('ajv-formats');
+const { materializeSources } = require('./sources');
 const pin = require('../../threadloop/pin.json');
 const { canonical, parseJson, sha256, digest, domainDigest } = require('./codec');
 
@@ -29,7 +30,8 @@ function validateDomainResult(operation, input, result) {
     decide: ['decision', 'invalid'],
     execution_scenario: ['execution', 'invalid'],
   };
-  if (!kinds[operation]?.includes(result.status)) throw new Error('Operation/result kind mismatch');
+  if (!kinds[operation]?.includes(result.status))
+    throw new Error('Operation/result kind mismatch');
   function envelope(value, payload, hash) {
     requireEqual(value[hash], domainDigest(value[payload]), `Embedded ${hash}`);
   }
@@ -68,7 +70,8 @@ function validateDomainResult(operation, input, result) {
 }
 
 function machineResult(result) {
-  if (result.status !== 'decision' || result.decision.decision.outcome !== 'blocked') return result;
+  if (result.status !== 'decision' || result.decision.decision.outcome !== 'blocked')
+    return result;
   const decision = structuredClone(result.decision.decision);
   decision.reasons = decision.reasons.map(({ message, recovery, ...machine }) => machine);
   return { status: result.status, decision };
@@ -103,7 +106,8 @@ function loadCorpus(checkout) {
   function validate(name, value) {
     canonical(value);
     const validator = validators[name];
-    if (!validator(value)) throw new Error(`${name} schema: ${ajv.errorsText(validator.errors)}`);
+    if (!validator(value))
+      throw new Error(`${name} schema: ${ajv.errorsText(validator.errors)}`);
   }
   const manifest = read(`${relativeRoot}/manifest.json`);
   validate('manifest', manifest);
@@ -146,15 +150,26 @@ function loadCorpus(checkout) {
       throw new Error('Manifest identities must be sorted, unique and match paths');
     }
   }
+  const shared = read(`${relativeRoot}/shared.json`);
+  validate('shared', shared);
+  const sources = Object.fromEntries(
+    entries.map((entry) => {
+      const source = read(`${relativeRoot}/${entry.path}`);
+      validate('source', source);
+      return [entry.path, source];
+    }),
+  );
+  const expanded = materializeSources(sources, shared.values);
   const fixtures = entries.map((entry) => {
-    const fixture = read(`${relativeRoot}/${entry.path}`);
+    const fixture = expanded[entry.path];
     validate('fixture', fixture);
     requireEqual(
       [fixture.id, fixture.operation, digest(fixture.input), digest(fixture)],
       [entry.id, entry.operation, entry.input_digest, entry.fixture_digest],
       entry.path,
     );
-    if (fixture.operation === 'execution_scenario') validate('execution-scenario', fixture.input);
+    if (fixture.operation === 'execution_scenario')
+      validate('execution-scenario', fixture.input);
     validateDomainResult(fixture.operation, fixture.input, fixture.expected);
     return fixture;
   });

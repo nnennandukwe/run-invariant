@@ -20,7 +20,7 @@ ThreadLoop artifacts (network access is needed only for this acquisition):
 
 ```bash
 git clone https://github.com/nnennandukwe/threadloop.git .threadloop-corpus
-git -C .threadloop-corpus checkout --detach 49fbf87e8a99f8490262f3ab6405e0b4b363d02f
+git -C .threadloop-corpus checkout --detach 31b8a61af064d1e4c41801ea9426b977f6ec40a3
 THREADLOOP_CHECKOUT="$PWD/.threadloop-corpus" npm run test:threadloop
 ```
 
@@ -31,14 +31,25 @@ calls. A source archive with the same directory layout also works: the loader
 verifies content, not a mutable Git branch name. Packet source revision is the
 reviewed provenance recorded in the pin, not an assertion about checkout HEAD.
 
-The loader checks six exact conformance-schema hashes, the pinned manifest and
+The loader checks eight exact conformance-schema hashes, the pinned manifest and
 complete-fixture digests, compatibility metadata, every upstream schema checksum,
 and exact fixture/schema inventories before launching a process. Unknown profiles,
 duplicate JSON keys, invalid Unicode, unsafe or lossy numeric literals, missing or unlisted fixtures,
 path escapes, and symlinks below the checkout root fail closed. Formatting-only
 fixture changes preserve identity; upstream and conformance schema hashes bind
 literal file bytes. Inputs intentionally invalid under domain rules remain valid
-negative tests. Artifact reads use bounded regular-file handles, so growth after a size check cannot allocate the whole replacement. Use a stable checkout during validation; these checks are not an OS filesystem sandbox. There is no automatic repair or expectation-update command.
+negative tests.
+
+Fixture files are compact source envelopes. The loader expands local `$fixture_ref`
+values from `shared.json` before validating complete fixtures and their original
+manifest digests. Source/shared storage versions are checked separately from wire
+versions. Cycles, missing references, sibling overrides, and unused shared values
+fail before launch. Expansion is bounded while walking to depth 64 (including
+reference hops), one million visits, and 16 MiB of canonical content per fixture.
+Subjects receive fully expanded inputs. This storage compaction preserves the
+original 38 cases, corpus identity, and golden request/response bytes.
+
+Artifact reads use bounded regular-file handles, so growth after a size check cannot allocate the whole replacement. Use a stable checkout during validation; these checks are not an OS filesystem sandbox. There is no automatic repair or expectation-update command.
 
 ## Run an executable
 
@@ -81,7 +92,7 @@ packet contains case diagnostics and identities.
 
 ## Wire and comparison rules
 
-The [pinned ThreadLoop specification](https://github.com/nnennandukwe/threadloop/blob/49fbf87e8a99f8490262f3ab6405e0b4b363d02f/docs/contracts/controller-conformance-v0.1/README.md)
+The [pinned ThreadLoop specification](https://github.com/nnennandukwe/threadloop/blob/31b8a61af064d1e4c41801ea9426b977f6ec40a3/docs/contracts/controller-conformance-v0.1/README.md)
 and its JSON schemas are normative. Independent protocol, request/response schema,
 fixture, manifest, compatibility, canonicalization, and digest identities are
 checked without negotiation or fallback.
