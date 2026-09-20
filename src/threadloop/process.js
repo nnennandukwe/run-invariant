@@ -31,10 +31,15 @@ function invoke(command, input, limits = defaults) {
         return;
       }
     }
-    if (input.length > limits.stdin_bytes) {
+    if (!Buffer.isBuffer(input) && !(input instanceof Uint8Array)) {
+      reject(new Error('STDIN_TYPE: expected a Buffer or Uint8Array'));
+      return;
+    }
+    if (input.byteLength > limits.stdin_bytes) {
       reject(new Error('STDIN_LIMIT: request exceeds runner limit'));
       return;
     }
+    input = Buffer.from(input);
     const grouped = process.platform !== 'win32';
     const child = spawn(command[0], command.slice(1), {
       shell: false,
@@ -97,7 +102,11 @@ function invoke(command, input, limits = defaults) {
       kill(); // Reap remaining processes in the POSIX group, even after success.
       finish();
     });
-    child.stdin.end(input);
+    try {
+      child.stdin.end(input);
+    } catch (error) {
+      abort(`STDIN: ${error.message}`);
+    }
   });
 }
 
