@@ -34,7 +34,7 @@ reviewed provenance recorded in the pin, not an assertion about checkout HEAD.
 The loader checks six exact conformance-schema hashes, the pinned manifest and
 complete-fixture digests, compatibility metadata, every upstream schema checksum,
 and exact fixture/schema inventories before launching a process. Unknown profiles,
-duplicate JSON keys, invalid Unicode, unsafe numbers, missing or unlisted fixtures,
+duplicate JSON keys, invalid Unicode, unsafe or lossy numeric literals, missing or unlisted fixtures,
 path escapes, and symlinks below the checkout root fail closed. Formatting-only
 fixture changes preserve identity; upstream and conformance schema hashes bind
 literal file bytes. Inputs intentionally invalid under domain rules remain valid

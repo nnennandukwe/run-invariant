@@ -86,6 +86,26 @@ function canonical(value) {
 
 // Parse artifacts independently of JSON.parse's duplicate-key collapsing. The
 // same bounds apply before schemas recurse into objects, including pretty JSON.
+function exactInteger(lexeme) {
+  const invalid = () => {
+    throw new Error('Invalid JSON integer: lossy or out-of-range numeric literal');
+  };
+  if (lexeme.startsWith('-')) invalid();
+  const [mantissa, exponentText = '0'] = lexeme.toLowerCase().split('e');
+  const [whole, fraction = ''] = mantissa.split('.');
+  const digits = (whole + fraction).replace(/^0+/, '');
+  if (!digits) return 0;
+  const significant = digits.replace(/0+$/, '');
+  const exponent = Number(exponentText);
+  // No bounded nonzero mantissa can cancel a scale beyond this range.
+  if (!Number.isSafeInteger(exponent) || Math.abs(exponent) > MAX_BYTES + 16) invalid();
+  const scale = exponent - fraction.length + digits.length - significant.length;
+  if (scale < 0 || significant.length + scale > 16) invalid();
+  const result = Number(significant + '0'.repeat(scale));
+  if (!Number.isSafeInteger(result)) invalid();
+  return result;
+}
+
 function parseJson(bytes) {
   if (!Buffer.isBuffer(bytes) && !(bytes instanceof Uint8Array))
     throw new Error('Expected UTF-8 bytes');
@@ -178,10 +198,7 @@ function parseJson(bytes) {
     const number = match.exec(source);
     if (!number) fail('Expected JSON value');
     at = match.lastIndex;
-    const result = Number(number[0]);
-    if (!Number.isSafeInteger(result) || result < 0 || Object.is(result, -0))
-      fail('Invalid JSON integer');
-    return result;
+    return exactInteger(number[0]);
   }
   const result = value(0);
   space();

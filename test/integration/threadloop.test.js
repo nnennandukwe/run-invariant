@@ -377,3 +377,29 @@ test('wrong operation result and missing execution steps are protocol errors', (
     /omits trace steps/,
   );
 });
+
+test('underflowed corpus number fails before launch despite identical JSON.parse digest (7df65ae8)', async (t) => {
+  const root = copyCorpus(t);
+  const file = path.join(root, 'docs/contracts/controller-conformance-v0.1/fixtures/case_029.json');
+  const original = fs.readFileSync(file, 'utf8');
+  const altered = original.replace('"expected_revision": 0,', '"expected_revision": 1e-324,');
+  assert.notEqual(original, altered);
+  assert.deepEqual(JSON.parse(original), JSON.parse(altered));
+  fs.writeFileSync(file, altered);
+  const sentinel = path.join(root, 'subject-started');
+  await assert.rejects(
+    runThreadLoop({
+      checkout: root,
+      command: [
+        process.execPath,
+        '-e',
+        'require("fs").writeFileSync(process.argv[1],"started")',
+        sentinel,
+      ],
+      subject,
+      subjectKind: 'synthetic',
+    }),
+    /integer/,
+  );
+  assert.equal(fs.existsSync(sentinel), false);
+});

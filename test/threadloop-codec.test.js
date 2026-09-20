@@ -54,3 +54,26 @@ test('artifact JSON admits presentation whitespace but preserves bounded JSON an
   assert.throws(() => canonical(new Proxy({}, {})), /plain/);
   assert.throws(() => canonical([, 1]), /dense/);
 });
+
+test('numeric lexemes cannot round or underflow into a pinned integer (7df65ae8)', () => {
+  for (const literal of [
+    '1e-324',
+    '1.0000000000000001',
+    '9007199254740991.1',
+    '1e99999',
+    '1e-99999',
+    '-0e3',
+  ]) {
+    assert.throws(() => parseJson(Buffer.from(literal)), /integer/i, literal);
+  }
+  for (const [literal, integer] of [
+    ['1e0', 1],
+    ['10e-1', 1],
+    ['1.000', 1],
+    ['1.25e2', 125],
+    ['0e999999999999999999999999', 0],
+    ['90071992547409910e-1', 9007199254740991],
+  ]) {
+    assert.equal(parseJson(Buffer.from(literal)), integer, literal);
+  }
+});
