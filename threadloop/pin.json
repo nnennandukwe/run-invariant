@@ -1,6 +1,6 @@
 {
   "repository": "https://github.com/nnennandukwe/threadloop",
-  "revision": "31b8a61af064d1e4c41801ea9426b977f6ec40a3",
+  "revision": "a7e857cf1d9f562d597c2256365078b712c5288b",
   "status": "proposed-in-threadloop-pr-128",
   "corpus_digest": "11620588c6f4b39353ea9f77e361a50b5cb0dc970410b1ac10aa8bef13efad84",
   "schemas": {
@@ -10,7 +10,7 @@
     "manifest.schema.json": "7bb7fa1348f8a4c3e60814678ca6ef6a9d5ee398d603bc56170ba0137b5f6e30",
     "request.schema.json": "c5820d9bcffcb516bfff3120dd290a91b4978e2b5b3fe28ada7a1a0ba6143637",
     "response.schema.json": "04392f24e64fd73e599aad39c43747336c3e3b01e9e35d8d970b190d1daab67a",
-    "shared.schema.json": "25c7e6fe87882cfb90a66b92dcbc54ff8a7e908fa47bf0f31967d933b0cf09de",
-    "source.schema.json": "55d97e49a5c97c6ed0f138cbfd57231caf3c5df0c0017ea121ea79a30eda19c0"
+    "shared.schema.json": "5d07767b44ccd66e08fa2ff2a1ca2c5d81fd54319924b4a63884ca056e9f1802",
+    "source.schema.json": "4fbc818d2920d5fa4e1a24f987b4783206009a94103263151f321702ea1b7fc8"
   }
 }

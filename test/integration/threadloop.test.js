@@ -218,6 +218,7 @@ function copyCorpus(testContext) {
   return root;
 }
 for (const mutation of [
+  'shared-oversized',
   'shared-change',
   'shared-unused',
   'shared-cycle',
@@ -255,6 +256,8 @@ for (const mutation of [
     if (mutation === 'shared-version') shared.schema = 'unsupported/99';
     if (['shared-change', 'shared-unused', 'shared-cycle', 'shared-version'].includes(mutation))
       fs.writeFileSync(sharedPath, JSON.stringify(shared));
+    if (mutation === 'shared-oversized')
+      fs.writeFileSync(sharedPath, Buffer.alloc(2 * 1024 * 1024 + 1));
     if (mutation === 'shared-missing') fs.unlinkSync(sharedPath);
     if (mutation === 'shared-duplicate-key')
       fs.writeFileSync(sharedPath, '{"schema":"duplicate",' + JSON.stringify(shared).slice(1));

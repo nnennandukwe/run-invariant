@@ -51,4 +51,21 @@ function readArtifact(root, relative) {
   }
 }
 
-module.exports = { readArtifact };
+function verifyInventory(directory, expected) {
+  const remaining = new Set(expected);
+  if (remaining.size !== expected.length) throw new Error(`${directory}: duplicate inventory`);
+  const handle = fs.opendirSync(directory);
+  try {
+    let entry;
+    while ((entry = handle.readSync()) !== null) {
+      if (!remaining.delete(entry.name))
+        throw new Error(`${directory}: unlisted artifact: ${entry.name}`);
+    }
+  } finally {
+    handle.closeSync();
+  }
+  if (remaining.size)
+    throw new Error(`${directory}: missing artifacts: ${[...remaining].join(', ')}`);
+}
+
+module.exports = { readArtifact, verifyInventory };

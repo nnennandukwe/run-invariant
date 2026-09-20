@@ -7,20 +7,20 @@ const { canonical, MAX_BYTES, MAX_DEPTH, MAX_VALUES } = require('./codec');
 function materializeSources(sources, values) {
   canonical(values);
   const used = new Set();
+  let visits = 0;
+  let bytes = 0;
   const fixtures = Object.fromEntries(
     Object.entries(sources).map(([filename, source]) => {
       try {
         canonical(source);
-        let visits = 0;
-        let bytes = 0;
         const active = new Set();
         function charge(count) {
           bytes += count;
-          if (bytes > MAX_BYTES) throw new Error('Fixture expansion byte limit exceeded');
+          if (bytes > MAX_BYTES) throw new Error('Corpus expansion byte limit exceeded');
         }
         function expand(value, depth) {
           if (++visits > MAX_VALUES || depth > MAX_DEPTH)
-            throw new Error('Fixture expansion depth/value limit exceeded');
+            throw new Error('Corpus expansion depth/value limit exceeded');
           if (Array.isArray(value)) {
             charge(2 + Math.max(0, value.length - 1));
             return value.map((item) => expand(item, depth + 1));

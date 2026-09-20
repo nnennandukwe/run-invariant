@@ -1,7 +1,7 @@
 'use strict';
 
 const fs = require('node:fs');
-const { readArtifact } = require('./files');
+const { readArtifact, verifyInventory } = require('./files');
 const path = require('node:path');
 const Ajv2020 = require('ajv/dist/2020');
 const addFormats = require('ajv-formats');
@@ -98,11 +98,7 @@ function loadCorpus(checkout) {
     requireEqual(sha256(bytes), expected, `Schema ${filename}`);
     validators[filename.replace('.schema.json', '')] = ajv.compile(parseJson(bytes));
   }
-  requireEqual(
-    fs.readdirSync(schemaDirectory).sort(),
-    Object.keys(pin.schemas).sort(),
-    'Schema inventory',
-  );
+  verifyInventory(schemaDirectory, Object.keys(pin.schemas));
   function validate(name, value) {
     canonical(value);
     const validator = validators[name];
@@ -134,10 +130,9 @@ function loadCorpus(checkout) {
         `${directory}/${schema.path}`,
       );
     }
-    requireEqual(
-      fs.readdirSync(path.join(root, directory)).sort(),
-      contract.schemas.map((schema) => schema.path).sort(),
-      `${contract.name} schema inventory`,
+    verifyInventory(
+      path.join(root, directory),
+      contract.schemas.map((schema) => schema.path),
     );
   }
   const entries = manifest.manifest.entries;
@@ -149,6 +144,18 @@ function loadCorpus(checkout) {
     ) {
       throw new Error('Manifest identities must be sorted, unique and match paths');
     }
+  }
+  verifyInventory(
+    path.join(root, relativeRoot, 'fixtures'),
+    entries.map((entry) => `${entry.id}.json`),
+  );
+  let sourceBytes = 0;
+  for (const relative of ['shared.json', ...entries.map((entry) => entry.path)]) {
+    const metadata = fs.lstatSync(path.join(root, relativeRoot, relative));
+    if (!metadata.isFile()) throw new Error(`${relative}: expected regular file`);
+    sourceBytes += metadata.size;
+    if (sourceBytes > 2 * 1024 * 1024)
+      throw new Error('Corpus source-byte limit exceeded (2 MiB)');
   }
   const shared = read(`${relativeRoot}/shared.json`);
   validate('shared', shared);
@@ -173,11 +180,6 @@ function loadCorpus(checkout) {
     validateDomainResult(fixture.operation, fixture.input, fixture.expected);
     return fixture;
   });
-  requireEqual(
-    fs.readdirSync(path.join(root, relativeRoot, 'fixtures')).sort(),
-    entries.map((entry) => `${entry.id}.json`).sort(),
-    'Fixture inventory',
-  );
   return { manifest, fixtures, compatibility, validate };
 }
 

@@ -52,3 +52,15 @@ test('expansion has byte, visit and reference-depth bounds before allocation', (
   }
   assert.throws(() => materializeSources({ case: source(ref(name)) }, values), /limit/);
 });
+
+test('aggregate expansion rejects two individually bounded cases', () => {
+  const values = { leaf: 'x'.repeat(1024) };
+  let name = 'leaf';
+  for (let index = 0; index < 13; index++) {
+    values[`level_${index}`] = [ref(name), ref(name)];
+    name = `level_${index}`;
+  }
+  const one = source(ref(name));
+  assert.doesNotThrow(() => materializeSources({ first: one }, values));
+  assert.throws(() => materializeSources({ first: one, second: one }, values), /byte limit/);
+});

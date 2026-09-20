@@ -20,7 +20,7 @@ ThreadLoop artifacts (network access is needed only for this acquisition):
 
 ```bash
 git clone https://github.com/nnennandukwe/threadloop.git .threadloop-corpus
-git -C .threadloop-corpus checkout --detach 31b8a61af064d1e4c41801ea9426b977f6ec40a3
+git -C .threadloop-corpus checkout --detach a7e857cf1d9f562d597c2256365078b712c5288b
 THREADLOOP_CHECKOUT="$PWD/.threadloop-corpus" npm run test:threadloop
 ```
 
@@ -45,7 +45,9 @@ values from `shared.json` before validating complete fixtures and their original
 manifest digests. Source/shared storage versions are checked separately from wire
 versions. Cycles, missing references, sibling overrides, and unused shared values
 fail before launch. Expansion is bounded while walking to depth 64 (including
-reference hops), one million visits, and 16 MiB of canonical content per fixture.
+reference hops), one million visits, and 16 MiB of canonical content across the whole expanded corpus. The loader checks
+exact fixture inventory before reading source files, uses bounded directory enumeration,
+and rejects total stored source data above 2 MiB before parsing it.
 Subjects receive fully expanded inputs. This storage compaction preserves the
 original 38 cases, corpus identity, and golden request/response bytes.
 
@@ -92,7 +94,7 @@ packet contains case diagnostics and identities.
 
 ## Wire and comparison rules
 
-The [pinned ThreadLoop specification](https://github.com/nnennandukwe/threadloop/blob/31b8a61af064d1e4c41801ea9426b977f6ec40a3/docs/contracts/controller-conformance-v0.1/README.md)
+The [pinned ThreadLoop specification](https://github.com/nnennandukwe/threadloop/blob/a7e857cf1d9f562d597c2256365078b712c5288b/docs/contracts/controller-conformance-v0.1/README.md)
 and its JSON schemas are normative. Independent protocol, request/response schema,
 fixture, manifest, compatibility, canonicalization, and digest identities are
 checked without negotiation or fallback.
