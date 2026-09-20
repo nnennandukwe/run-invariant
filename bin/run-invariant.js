@@ -102,11 +102,14 @@ function printHelp() {
       '       node bin/run-invariant.js <mode>',
       '       run-invariant subject [--json] -- <executable> [arguments...]',
       '',
+      '       run-invariant threadloop --help',
+      '',
       'Modes:',
       '  --check  Compare a fresh packet with committed evidence.',
       '  --write  Replace committed evidence with a fresh packet.',
       '  --json   Print a fresh packet as JSON without writing.',
       '  subject  Test an external process against the frozen cases.',
+      '  threadloop  Select the separately pinned ThreadLoop controller suite.',
       '',
     ].join('\n'),
   );
@@ -114,6 +117,9 @@ function printHelp() {
 
 function main(argv) {
   const mode = argv[0] || '--check';
+  if (mode === 'threadloop') {
+    return require('../src/threadloop/cli').main(argv.slice(1));
+  }
   if (mode === 'subject') {
     const separator = argv.indexOf('--');
     const options = argv.slice(1, separator < 0 ? argv.length : separator);

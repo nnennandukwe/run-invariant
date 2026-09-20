@@ -1,0 +1,14 @@
+{
+  "repository": "https://github.com/nnennandukwe/threadloop",
+  "revision": "49fbf87e8a99f8490262f3ab6405e0b4b363d02f",
+  "status": "proposed-in-threadloop-pr-128",
+  "corpus_digest": "11620588c6f4b39353ea9f77e361a50b5cb0dc970410b1ac10aa8bef13efad84",
+  "schemas": {
+    "compatibility.schema.json": "0dd444965f6f437c2738c80e9f1973f4933e396aa9e29e6300ee4cfa2bb71cc3",
+    "execution-scenario.schema.json": "eafcdceac2a2774b32d9dc373e15b71d1c1bff4ebf0a4eadf8432ae92ab77afe",
+    "fixture.schema.json": "5a9cd55b3155cc594a8cec77a984a1e4daf40caf3b809158af76625d1f473b26",
+    "manifest.schema.json": "7bb7fa1348f8a4c3e60814678ca6ef6a9d5ee398d603bc56170ba0137b5f6e30",
+    "request.schema.json": "c5820d9bcffcb516bfff3120dd290a91b4978e2b5b3fe28ada7a1a0ba6143637",
+    "response.schema.json": "04392f24e64fd73e599aad39c43747336c3e3b01e9e35d8d970b190d1daab67a"
+  }
+}
