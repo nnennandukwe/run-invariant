@@ -1,7 +1,7 @@
 {
   "repository": "https://github.com/nnennandukwe/threadloop",
   "revision": "fde510deca780c7cada8a2e461bd15af0fe4ae88",
-  "status": "proposed-in-threadloop-pr-128",
+  "status": "accepted-in-threadloop-pr-128",
   "corpus_digest": "11620588c6f4b39353ea9f77e361a50b5cb0dc970410b1ac10aa8bef13efad84",
   "schemas": {
     "compatibility.schema.json": "0dd444965f6f437c2738c80e9f1973f4933e396aa9e29e6300ee4cfa2bb71cc3",
