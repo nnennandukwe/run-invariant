@@ -1,10 +1,14 @@
 # ThreadLoop Controller Conformance v0.1
 
 RunInvariant consumes the corpus owned by ThreadLoop at the immutable revision in
-[pin.json](pin.json). That revision is proposed in
-[ThreadLoop PR #128](https://github.com/nnennandukwe/threadloop/pull/128), which
-should be accepted before this integration is released. The pin must be updated
-explicitly if accepted artifacts change; a matching version string is insufficient.
+[pin.json](pin.json). The corpus was accepted in merged
+[ThreadLoop PR #128](https://github.com/nnennandukwe/threadloop/pull/128), and the
+[Controller Contract freeze #110](https://github.com/nnennandukwe/threadloop/issues/110) is complete.
+The existing source revision is retained: its corpus and schema artifacts are identical to those accepted in the merge.
+Changed artifacts still require an explicit reviewed pin update; a matching version string is insufficient.
+
+[RunInvariant PR #4](https://github.com/nnennandukwe/run-invariant/pull/4) merged this harness integration.
+That merge does not establish a release or conformance by a real ThreadLoop controller.
 
 This is a separate suite from the frozen decision protocol and the future
 [GAAP Agent Run suite](https://github.com/nnennandukwe/run-invariant/issues/2).

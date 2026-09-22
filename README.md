@@ -101,7 +101,10 @@ node bin/run-invariant.js threadloop --help
 
 See [ThreadLoop setup and protocol](./threadloop/README.md) for the exact corpus
 revision, identity file, command examples, runner limits, and failure categories.
-The current pin is proposed in [ThreadLoop PR #128](https://github.com/nnennandukwe/threadloop/pull/128).
+The pinned corpus was accepted in merged [ThreadLoop PR #128](https://github.com/nnennandukwe/threadloop/pull/128);
+the [Controller Contract freeze #110](https://github.com/nnennandukwe/threadloop/issues/110) is complete.
+[RunInvariant PR #4](https://github.com/nnennandukwe/run-invariant/pull/4) merged this harness integration.
+This merge does not establish a release.
 Synthetic test subjects exercise the harness; no real controller implementation
 or real controller conformance is provided here. This suite is separate from
 [the GAAP Agent Run suite in #2](https://github.com/nnennandukwe/run-invariant/issues/2).
