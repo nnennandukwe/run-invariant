@@ -1,11 +1,12 @@
 # RunInvariant
 
-RunInvariant runs a frozen decision corpus against either its included
-reference evaluator or an external executable, then returns a JSON conformance
-packet.
+RunInvariant runs frozen conformance cases against an external executable and
+returns a JSON evidence packet. The legacy decision suite also includes a
+reference evaluator. The separately selected ThreadLoop suite consumes a pinned
+controller corpus owned by ThreadLoop.
 
-Harness maintainers use it to test whether an implementation returns the exact
-`allow`, `ask`, or `block` decision required at each agent-run integrity gate.
+Harness maintainers use the legacy suite to test whether an implementation returns
+the exact `allow`, `ask`, or `block` decision required at each agent-run integrity gate.
 The external executable can be written in any language and does not need to
 link to this repository.
 
@@ -17,6 +18,7 @@ link to this repository.
 | [`fixtures/cases.v0.1.0.json`](./fixtures/cases.v0.1.0.json) | Frozen canonical corpus | Review the 35 normalized inputs, expected decisions, and five unsafe reference mutants. |
 | [`subject-protocol`](./subject-protocol/README.md) | Language-neutral, versioned process interface | Implement stdin request and stdout response documents in an external harness. |
 | `npm run check` | Reference conformance check | Recompute the included evaluator's packet and compare it with committed evidence. |
+| [`run-invariant threadloop`](./threadloop/README.md) | Controller conformance suite | Consume the pinned external corpus and validate a separately identified subject. |
 | `run-invariant subject` | External subject check | Execute a harness process against cases that do not disclose their expected decisions. |
 | [`evidence/conformance-v0.1.0.json`](./evidence/conformance-v0.1.0.json) | Committed derived reference packet | Reproduce the historical 35/35 reference and 5/5 mutation result. |
 
@@ -26,12 +28,15 @@ new packet and never changes a file.
 
 ## Quick Start
 
-RunInvariant requires Node.js 20 or newer. It has no package dependencies,
-credentials, network calls, or environment variables.
+RunInvariant requires Node.js 20 or newer and `npm ci` for its pinned JSON-schema
+validators. Running either suite is offline and requires no service credentials.
+The optional ThreadLoop integration tests use `THREADLOOP_CHECKOUT` to locate
+the separately acquired, pinned corpus.
 
 ```bash
 git clone https://github.com/nnennandukwe/run-invariant.git
 cd run-invariant
+npm ci
 npm test
 npm run check
 ```
@@ -83,6 +88,25 @@ response document.
 The subject receives IDs, gate names, and normalized inputs. It does not
 receive case titles or expected decisions. The response is bound to the exact
 request bytes with `request_sha256`.
+
+## ThreadLoop Controller Suite
+
+The explicit `threadloop` command consumes the externally owned Controller
+Conformance v0.1 corpus. It sends one canonical request to a fresh subject process
+per case, checks its pinned identity and response, and emits a separate packet.
+
+```bash
+node bin/run-invariant.js threadloop --help
+```
+
+See [ThreadLoop setup and protocol](./threadloop/README.md) for the exact corpus
+revision, identity file, command examples, runner limits, and failure categories.
+The current pin is proposed in [ThreadLoop PR #128](https://github.com/nnennandukwe/threadloop/pull/128).
+Synthetic test subjects exercise the harness; no real controller implementation
+or real controller conformance is provided here. This suite is separate from
+[the GAAP Agent Run suite in #2](https://github.com/nnennandukwe/run-invariant/issues/2).
+Existing `subject`, `--check`, `--write`, and `--json` modes retain their frozen
+protocol bytes and behavior.
 
 ## Reference Evidence Commands
 
@@ -169,7 +193,11 @@ npm test
 npm run check
 ```
 
-Changes to subject fields, validation, process behavior, timeout, or output
+Also run `npm run test:threadloop` with `THREADLOOP_CHECKOUT` set to the pinned
+checkout (see the ThreadLoop guide). CI obtains that exact commit and runs both
+test suites. No expected-result regeneration occurs during checks.
+
+Changes to legacy subject fields, validation, process behavior, timeout, or output
 limits require a new subject-protocol version. Changes to frozen decision
 behavior require a new decision-protocol and fixture version.
 
