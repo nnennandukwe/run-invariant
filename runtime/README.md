@@ -3,7 +3,8 @@
 This suite tests a bounded runtime through an external process. RunInvariant owns
 the scripts, expected outcomes and independent receipt checks. The subject owns
 its runtime implementation and receives one canonical Agent Run Request plus
-host-owned trust configuration. It never receives case titles, case IDs, expected
+host-owned trust configuration. Independently specified gate outcomes and ordered
+authority bindings stay in each fixture. It never receives case titles, case IDs, expected
 decisions, expected terminal outcomes or future script steps.
 
 The 0.1.0 decision protocol, fixtures, evidence and subject interface remain frozen.
@@ -103,7 +104,8 @@ the runner kills the original process group after completion or failure.
 This covers descendants in that group; a process that creates another session can
 escape that cleanup. Run only explicitly trusted local subjects. The runner isn't
 an execution sandbox. Native Windows termination covers the immediate child only. The runner
-waits for process exit before accepting a result. The post-terminal case submits
+waits for process exit before accepting a result and reaps a rejected child before
+starting the next case. If closure can't be confirmed, the suite stops. The post-terminal case submits
 additional input after a valid receipt and requires refusal with exit 1 and no
 further stdout. Other cases require exit 0.
 

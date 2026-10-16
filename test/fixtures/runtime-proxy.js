@@ -68,6 +68,51 @@ readline.createInterface({ input: child.stdout }).on('line', (line) => {
     const bad = 'sha256:' + '0'.repeat(64);
     if (mode === 'wrong-request') body.request_digest = bad;
     if (mode === 'wrong-subject') body.resulting_subject_digest = bad;
+    if (mode === 'wrong-tool-decision')
+      for (const event of body.events.filter(
+        (event) => event.event_type === 'tool_execution',
+      ))
+        event.decision_id = 'unrelated-decision';
+    if (mode === 'decisive-after-execution') {
+      const decision = body.events.find(
+        (event) =>
+          event.event_type === 'protected_effect_decision' &&
+          event.gate === 'permission',
+      );
+      body.events = body.events.filter((event) => event !== decision);
+      body.events.splice(
+        body.events.findIndex(
+          (event) => event.event_type === 'tool_execution',
+        ) + 1,
+        0,
+        decision,
+      );
+      body.events.forEach((event, index) => (event.sequence = index + 1));
+    }
+    if (mode === 'late-approval') {
+      const approval = body.events.find(
+        (event) => event.event_type === 'approval_recorded',
+      );
+      body.events = body.events.filter((event) => event !== approval);
+      body.events.splice(
+        body.events.findIndex(
+          (event) => event.event_type === 'tool_execution',
+        ) + 1,
+        0,
+        approval,
+      );
+      body.events.forEach((event, index) => (event.sequence = index + 1));
+    }
+    if (mode === 'denied-records-allow') {
+      for (const result of value.effects) {
+        result.body.decision.decision.outcome = 'allow';
+        result.result_digest = identity(result.body);
+      }
+      for (const event of body.events.filter(
+        (event) => event.event_type === 'protected_effect_decision',
+      ))
+        event.decision.outcome = 'allow';
+    }
     if (mode === 'missing-result') value.effects.pop();
     if (mode === 'omit-authorization') {
       body.events = body.events.filter(

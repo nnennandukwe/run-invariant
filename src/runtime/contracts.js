@@ -59,6 +59,18 @@ function validateReceipt(start, terminal, fixture, calls) {
   same(body.terminal_status, fixture.expected.status, 'terminal status');
   same(body.terminal_reason, fixture.expected.reason, 'terminal reason');
   same(
+    body.events
+      .filter((event) => event.event_type === 'protected_effect_decision')
+      .map(({ gate, subject_digest, protected_effect_digest, decision }) => ({
+        gate,
+        subject_digest,
+        protected_effect_digest,
+        decision,
+      })),
+    fixture.expected.decisions,
+    'independent ordered authority expectations',
+  );
+  same(
     body.resulting_subject_digest,
     fixture.expected.subject_digest,
     'resulting subject',
@@ -95,6 +107,22 @@ function validateReceipt(start, terminal, fixture, calls) {
     )
   )
     throw new Error('AUTHORITY: missing exact plan approval');
+  const executing = body.events.find(
+    (event) =>
+      event.event_type === 'status_transition' && event.to === 'executing',
+  );
+  if (
+    !executing ||
+    !approvals.some(
+      (event) =>
+        event.sequence > planned[0].sequence &&
+        event.sequence < executing.sequence &&
+        request.approval_context.some((approval) =>
+          equal(approval, event.approval),
+        ),
+    )
+  )
+    throw new Error('AUTHORITY: plan approval must precede execution');
   const toolEvents = body.events.filter(
     (event) => event.event_type === 'tool_execution',
   );
@@ -305,6 +333,13 @@ function validateReceipt(start, terminal, fixture, calls) {
         [result.result_digest],
         'tool event result binding',
       );
+      same(
+        toolEvent.decision_id,
+        resultBody.decision.decision_id,
+        'tool decisive authority',
+      );
+      if (decisionEvent.sequence >= toolEvent.sequence)
+        throw new Error('AUTHORITY: effect authority must precede execution');
       const gates = body.events.filter(
         (event) =>
           event.event_type === 'protected_effect_decision' &&
@@ -360,6 +395,30 @@ function validateReceipt(start, terminal, fixture, calls) {
             'executor observed ' + field,
           );
       }
+    }
+    if (!execution) {
+      same(
+        resultBody.decision.decision.outcome,
+        resultBody.execution_status === 'awaiting_authority' ? 'ask' : 'block',
+        'non-execution decision outcome',
+      );
+      for (const field of [
+        'executor',
+        'sandbox_profile',
+        'exit',
+        'observed_post_effect_subject',
+      ])
+        same(resultBody[field], null, 'non-execution ' + field);
+      same(
+        resultBody.usage,
+        { cost_micros: 0, elapsed_ms: 0, model_tokens: 0, tool_calls: 0 },
+        'non-execution usage',
+      );
+      same(
+        resultBody.reason,
+        resultBody.decision.decision.code,
+        'non-execution reason',
+      );
     }
     if (resultBody.execution_status === 'executed') {
       if (resultBody.decision.decision.outcome !== 'allow')

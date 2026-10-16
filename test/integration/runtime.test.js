@@ -57,6 +57,10 @@ const mutants = [
   ['invented-reason', 0],
   ['wrong-decision-subject', 0],
   ['verification-before-mutation', 0],
+  ['wrong-tool-decision', 0],
+  ['decisive-after-execution', 0],
+  ['late-approval', 0],
+  ['denied-records-allow', 2],
   ['wrong-transcript', 0],
   ['work-after-terminal', 0],
 ];
@@ -71,3 +75,32 @@ for (const [mutant, index] of mutants)
       );
     },
   );
+
+test('runtime CLI exports a packet with independently reproducible retained bytes', async () => {
+  const { spawnSync } = require('node:child_process');
+  const { frame, hash } = require('../../src/runtime/codec');
+  const output = spawnSync(
+    process.execPath,
+    [
+      path.join(__dirname, '../../bin/run-invariant.js'),
+      'runtime',
+      '--json',
+      '--',
+      binary,
+      'runtime-subject',
+    ],
+    { encoding: 'utf8', maxBuffer: 8 * 1024 * 1024 },
+  );
+  assert.equal(output.status, 0, output.stderr);
+  const packet = JSON.parse(output.stdout);
+  assert.equal(packet.conformance.passed, 25);
+  for (const result of packet.conformance.cases) {
+    const records = result.evidence;
+    assert.equal(hash(frame(records.request)), result.start_digest);
+    assert.equal(
+      hash(Buffer.concat(records.transcript.map(frame))),
+      result.transcript_digest,
+    );
+    assert.equal(hash(frame(records.response)), result.response_digest);
+  }
+});

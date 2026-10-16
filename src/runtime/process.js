@@ -54,6 +54,7 @@ function invoke(command, fixture, { timeoutMs = 10000 } = {}) {
       failure,
       finished = false,
       step = 0;
+    let cleanupTimer;
     const transcript = [],
       calls = [];
     const timer = setTimeout(
@@ -76,6 +77,7 @@ function invoke(command, fixture, { timeoutMs = 10000 } = {}) {
       if (finished) return;
       finished = true;
       clearTimeout(timer);
+      clearTimeout(cleanupTimer);
       kill();
       if (failure) {
         failure.evidence = {
@@ -104,7 +106,12 @@ function invoke(command, fixture, { timeoutMs = 10000 } = {}) {
       child.stdin.destroy();
       child.stdout.destroy();
       child.stderr.destroy();
-      finish();
+      cleanupTimer = setTimeout(() => {
+        failure.cleanup_unconfirmed = true;
+        failure.message +=
+          '; CLEANUP: child closure unconfirmed; stop the suite';
+        finish();
+      }, 1000);
     }
     function line(bytes) {
       const message = parseMessage(bytes);

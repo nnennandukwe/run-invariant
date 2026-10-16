@@ -163,3 +163,25 @@ test(
     }
   },
 );
+
+test('rejected subject is reaped before invocation settles', async () => {
+  const os = require('node:os');
+  const directory = fs.mkdtempSync(
+    path.join(os.tmpdir(), 'run-invariant-reap-'),
+  );
+  const file = path.join(directory, 'pid');
+  const code = `require('node:fs').writeFileSync(process.argv[1],String(process.pid));process.stdout.write('{"kind":"invalid"}\\n');setInterval(()=>{},1000);`;
+  try {
+    await assert.rejects(
+      invoke([process.execPath, '-e', code, file], fixture),
+      /SCHEMA messages/,
+    );
+    const pid = Number(fs.readFileSync(file, 'utf8'));
+    assert.throws(
+      () => process.kill(pid, 0),
+      (error) => error.code === 'ESRCH',
+    );
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true });
+  }
+});

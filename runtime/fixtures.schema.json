@@ -272,7 +272,8 @@
               "reason",
               "effects",
               "subject_digest",
-              "usage"
+              "usage",
+              "decisions"
             ],
             "properties": {
               "status": {
@@ -335,6 +336,67 @@
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 9007199254740991
+                  }
+                }
+              },
+              "decisions": {
+                "type": "array",
+                "maxItems": 1024,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "gate",
+                    "subject_digest",
+                    "protected_effect_digest",
+                    "decision"
+                  ],
+                  "properties": {
+                    "gate": {
+                      "enum": [
+                        "permission",
+                        "tool_trust",
+                        "runtime",
+                        "workflow"
+                      ]
+                    },
+                    "subject_digest": {
+                      "type": "string",
+                      "pattern": "^sha256:[0-9a-f]{64}$"
+                    },
+                    "protected_effect_digest": {
+                      "type": "string",
+                      "pattern": "^sha256:[0-9a-f]{64}$"
+                    },
+                    "decision": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "outcome",
+                        "code",
+                        "effects"
+                      ],
+                      "properties": {
+                        "outcome": {
+                          "enum": [
+                            "allow",
+                            "ask",
+                            "block"
+                          ]
+                        },
+                        "code": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "effects": {
+                          "type": "array",
+                          "maxItems": 128,
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
                   }
                 }
               }

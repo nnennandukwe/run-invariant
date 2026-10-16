@@ -101,6 +101,7 @@ async function run(command, options = {}) {
         },
       });
     } catch (error) {
+      if (error.cleanup_unconfirmed) throw error;
       cases.push({
         id: fixture.id,
         title: fixture.title,
@@ -150,7 +151,7 @@ async function run(command, options = {}) {
       fs.readFileSync(path.join(root, 'manifest.v0.2.0.json')),
     ),
     subject: {
-      reported: subject || null,
+      reported: subject ? { ...subject } : null,
       command,
       executable_sha256: artifacts[0].sha256,
       artifacts,
