@@ -11,7 +11,7 @@ const { corpus } = loadCorpus();
 const fixture = corpus.cases[0];
 test('runtime corpus is separate and contains no expected results in start or replies', () => {
   assert.equal(corpus.corpus_version, '0.2.0');
-  assert.equal(corpus.cases.length, 21);
+  assert.equal(corpus.cases.length, 25);
   for (const item of corpus.cases) {
     const start = {
       kind: 'start',

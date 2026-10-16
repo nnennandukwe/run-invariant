@@ -45,7 +45,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: nnennandukwe/governed-agent-autonomy-patterns
-          ref: 800b9782188ef4f89067798161a0b709aef10d3e
+          ref: df12cb1ec698e300ac009c162d7e98735a64eabf
           path: .gaap-runtime
           persist-credentials: false
 

@@ -38,7 +38,7 @@ usage. `runtime --help` gives the command shape. Build the executable explicitly
 | `protocol.v0.2.0.json` | Runtime subject protocol 0.2.0 and process limits |
 | `messages.schema.json` | Wire schema 0.1.0 |
 | `fixtures.schema.json` | Fixture schema 0.1.0 |
-| `corpus.v0.2.0.json` | Corpus 0.2.0 with 21 independently specified cases |
+| `corpus.v0.2.0.json` | Corpus 0.2.0 with 25 independently specified cases |
 | `manifest.v0.2.0.json` | Source byte hashes and every case's input/expectation digests |
 
 `contracts/` contains unchanged copies of the accepted GAAP request, receipt,
@@ -57,7 +57,7 @@ updates legacy evidence.
 Each case gets a fresh process started directly without a shell. The host writes a
 `start` object with `kind`, `protocol`, `request` and `support`. Support pins policy
 identities, capability identities, capability/schema approval pairs, permission,
-executor identity, verifier IDs and the effect limit. The host serves only the
+executor identity, verifier IDs, the effect limit and an effect usage estimate. The host serves only the
 next scripted reply after validating the actual port name, input and sequence.
 
 Subject messages are canonical UTF-8 JSON followed by exactly one LF. Object keys
@@ -67,10 +67,13 @@ surrogates. The shared byte codec has no dependency on ThreadLoop's corpus or
 controller semantics. Receipt hashes use canonical JSON without LF, matching GAAP.
 
 The ports are `agent.plan`, `agent.next`, `executor.execute`, `verifier.verify`,
-`subject.observe`, `clock.now` and `signer.sign`. Executor responses describe host
+`subject.observe`, `clock.adapter_elapsed_ms` and `signer.sign`. Executor responses describe host
 observations, including failed, interrupted or uncertain effects. They aren't
 expected terminal outcomes. The clock reports cumulative adapter milliseconds from
-run start zero, after an operation; executor usage is counted separately. After
+run start zero, after an operation, including failed operations with an observed reply; executor
+usage is counted separately. Zero-time effects can use a zero elapsed estimate.
+If no clock observation survives a transport failure, recorded usage remains a
+lower bound. After
 valid verification, a final physical subject observation must still match before
 completion. A failed receipt retains the last governed subject; the transcript
 also records a later physical observation that prevented completion.

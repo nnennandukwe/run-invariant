@@ -5,7 +5,12 @@
     {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "protocol", "request", "support"],
+      "required": [
+        "kind",
+        "protocol",
+        "request",
+        "support"
+      ],
       "properties": {
         "kind": {
           "const": "start"
@@ -26,7 +31,8 @@
             "permission",
             "executor",
             "verifier_ids",
-            "max_effects"
+            "max_effects",
+            "effect_usage_estimate"
           ],
           "properties": {
             "policies": {
@@ -34,7 +40,11 @@
               "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["name", "version", "digest"],
+                "required": [
+                  "name",
+                  "version",
+                  "digest"
+                ],
                 "properties": {
                   "name": {
                     "type": "string",
@@ -59,7 +69,11 @@
               "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["name", "version", "digest"],
+                "required": [
+                  "name",
+                  "version",
+                  "digest"
+                ],
                 "properties": {
                   "name": {
                     "type": "string",
@@ -80,12 +94,20 @@
               "maxItems": 128
             },
             "permission": {
-              "enum": ["allow", "ask", "deny"]
+              "enum": [
+                "allow",
+                "ask",
+                "deny"
+              ]
             },
             "executor": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["name", "version", "digest"],
+              "required": [
+                "name",
+                "version",
+                "digest"
+              ],
               "properties": {
                 "name": {
                   "type": "string",
@@ -123,12 +145,19 @@
               "items": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["capability", "tool_schema_digest"],
+                "required": [
+                  "capability",
+                  "tool_schema_digest"
+                ],
                 "properties": {
                   "capability": {
                     "type": "object",
                     "additionalProperties": false,
-                    "required": ["name", "version", "digest"],
+                    "required": [
+                      "name",
+                      "version",
+                      "digest"
+                    ],
                     "properties": {
                       "name": {
                         "type": "string",
@@ -152,6 +181,38 @@
                   }
                 }
               }
+            },
+            "effect_usage_estimate": {
+              "type": "object",
+              "required": [
+                "cost_micros",
+                "elapsed_ms",
+                "model_tokens",
+                "tool_calls"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "cost_micros": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "elapsed_ms": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "model_tokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "tool_calls": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              }
             }
           }
         }
@@ -160,7 +221,12 @@
     {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "sequence", "port", "input"],
+      "required": [
+        "kind",
+        "sequence",
+        "port",
+        "input"
+      ],
       "properties": {
         "kind": {
           "const": "call"
@@ -171,7 +237,7 @@
         },
         "port": {
           "enum": [
-            "clock.now",
+            "clock.adapter_elapsed_ms",
             "agent.plan",
             "agent.next",
             "executor.execute",
@@ -186,7 +252,11 @@
     {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind", "sequence", "value"],
+      "required": [
+        "kind",
+        "sequence",
+        "value"
+      ],
       "properties": {
         "kind": {
           "const": "reply"
@@ -228,7 +298,11 @@
         "subject": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["name", "version", "implementation"],
+          "required": [
+            "name",
+            "version",
+            "implementation"
+          ],
           "properties": {
             "name": {
               "type": "string",
@@ -257,7 +331,10 @@
         "signature": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["keyid", "signature"],
+          "required": [
+            "keyid",
+            "signature"
+          ],
           "properties": {
             "keyid": {
               "const": "run-invariant-public-fixture"

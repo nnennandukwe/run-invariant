@@ -21,7 +21,7 @@ test(
       0,
       JSON.stringify(packet.conformance.cases.filter((item) => !item.passed)),
     );
-    assert.equal(packet.conformance.passed, 21);
+    assert.equal(packet.conformance.passed, 25);
     assert.match(packet.subject.executable_sha256, /^sha256:[0-9a-f]{64}$/);
   },
 );

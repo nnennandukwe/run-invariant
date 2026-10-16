@@ -1,7 +1,11 @@
 {
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "corpus_version", "cases"],
+  "required": [
+    "schema_version",
+    "corpus_version",
+    "cases"
+  ],
   "properties": {
     "schema_version": {
       "const": "run-invariant.runtime-fixtures/0.1.0"
@@ -48,7 +52,8 @@
               "permission",
               "executor",
               "verifier_ids",
-              "max_effects"
+              "max_effects",
+              "effect_usage_estimate"
             ],
             "properties": {
               "policies": {
@@ -56,7 +61,11 @@
                 "items": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": ["name", "version", "digest"],
+                  "required": [
+                    "name",
+                    "version",
+                    "digest"
+                  ],
                   "properties": {
                     "name": {
                       "type": "string",
@@ -81,7 +90,11 @@
                 "items": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": ["name", "version", "digest"],
+                  "required": [
+                    "name",
+                    "version",
+                    "digest"
+                  ],
                   "properties": {
                     "name": {
                       "type": "string",
@@ -102,12 +115,20 @@
                 "maxItems": 128
               },
               "permission": {
-                "enum": ["allow", "ask", "deny"]
+                "enum": [
+                  "allow",
+                  "ask",
+                  "deny"
+                ]
               },
               "executor": {
                 "type": "object",
                 "additionalProperties": false,
-                "required": ["name", "version", "digest"],
+                "required": [
+                  "name",
+                  "version",
+                  "digest"
+                ],
                 "properties": {
                   "name": {
                     "type": "string",
@@ -145,12 +166,19 @@
                 "items": {
                   "type": "object",
                   "additionalProperties": false,
-                  "required": ["capability", "tool_schema_digest"],
+                  "required": [
+                    "capability",
+                    "tool_schema_digest"
+                  ],
                   "properties": {
                     "capability": {
                       "type": "object",
                       "additionalProperties": false,
-                      "required": ["name", "version", "digest"],
+                      "required": [
+                        "name",
+                        "version",
+                        "digest"
+                      ],
                       "properties": {
                         "name": {
                           "type": "string",
@@ -174,6 +202,38 @@
                     }
                   }
                 }
+              },
+              "effect_usage_estimate": {
+                "type": "object",
+                "required": [
+                  "cost_micros",
+                  "elapsed_ms",
+                  "model_tokens",
+                  "tool_calls"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "cost_micros": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "elapsed_ms": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "model_tokens": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "tool_calls": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                }
               }
             }
           },
@@ -182,11 +242,15 @@
             "items": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["port", "input", "reply"],
+              "required": [
+                "port",
+                "input",
+                "reply"
+              ],
               "properties": {
                 "port": {
                   "enum": [
-                    "clock.now",
+                    "clock.adapter_elapsed_ms",
                     "agent.plan",
                     "agent.next",
                     "executor.execute",
@@ -212,7 +276,12 @@
             ],
             "properties": {
               "status": {
-                "enum": ["completed", "blocked", "failed", "interrupted"]
+                "enum": [
+                  "completed",
+                  "blocked",
+                  "failed",
+                  "interrupted"
+                ]
               },
               "reason": {
                 "type": "string",

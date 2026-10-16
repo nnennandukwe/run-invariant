@@ -7,7 +7,7 @@
   "transport": "canonical UTF-8 JSON plus exactly one LF per message over stdin/stdout",
   "canonical_profile": "RFC 8785 object sorting, non-negative safe integers, no duplicate keys, no unpaired surrogates",
   "ports": [
-    "clock.now",
+    "clock.adapter_elapsed_ms",
     "agent.plan",
     "agent.next",
     "executor.execute",
