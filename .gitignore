@@ -1,3 +1,6 @@
 node_modules/
 *.log
 .threadloop-corpus/
+
+.gaap-runtime/
+runtime-packet.json

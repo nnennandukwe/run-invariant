@@ -11,7 +11,9 @@
     "check": "node bin/run-invariant.js --check",
     "evidence:update": "node bin/run-invariant.js --write",
     "test": "node --test test/*.test.js",
-    "test:threadloop": "node --test test/integration/threadloop.test.js"
+    "test:threadloop": "node --test test/integration/threadloop.test.js",
+    "test:runtime": "node --test test/integration/runtime.test.js",
+    "check:runtime": "node scripts/runtime-manifest.js --check"
   },
   "engines": {
     "node": ">=20"
