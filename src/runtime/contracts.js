@@ -75,6 +75,26 @@ function validateReceipt(start, terminal, fixture, calls) {
     .filter((reply) => reply.step === 'effect')
     .map((reply) => reply.request);
   const executed = calls.filter((call) => call.port === 'executor.execute');
+  const planned = body.events.filter(
+    (event) => event.event_type === 'plan_recorded',
+  );
+  same(planned.length, 1, 'one accepted plan');
+  same(
+    planned[0].plan_digest,
+    calls.find((call) => call.port === 'agent.plan')?.reply,
+    'plan observation',
+  );
+  const approvals = body.events.filter(
+    (event) => event.event_type === 'approval_recorded',
+  );
+  if (
+    !approvals.some((event) =>
+      request.approval_context.some((approval) =>
+        equal(approval, event.approval),
+      ),
+    )
+  )
+    throw new Error('AUTHORITY: missing exact plan approval');
   const toolEvents = body.events.filter(
     (event) => event.event_type === 'tool_execution',
   );
@@ -82,6 +102,8 @@ function validateReceipt(start, terminal, fixture, calls) {
   let status = 'accepted';
   let subject = request.subject.digest;
   let verification;
+  let verificationCurrent = false;
+  let usage = { cost_micros: 0, elapsed_ms: 0, model_tokens: 0, tool_calls: 0 };
   for (const [index, event] of body.events.entries()) {
     if (['completed', 'blocked', 'failed', 'interrupted'].includes(status))
       throw new Error('TERMINAL: event after terminal status');
@@ -92,7 +114,32 @@ function validateReceipt(start, terminal, fixture, calls) {
         throw new Error('TERMINAL: event after terminal status');
       status = event.to;
     }
+    if (event.event_type === 'protected_effect_decision')
+      same(event.subject_digest, subject, 'decision current ledger subject');
+    if (event.event_type === 'tool_execution') {
+      if (status !== 'executing')
+        throw new Error('AUTHORITY: execution outside executing state');
+      const observed = executed.find(
+        (call) => identity(call.input) === event.protected_effect_digest,
+      );
+      if (!observed)
+        throw new Error('EVIDENCE: tool event without observed call');
+      same(
+        observed.input.subject.digest,
+        subject,
+        'execution current ledger subject',
+      );
+    }
+    if (event.event_type === 'usage') {
+      for (const key of Object.keys(usage))
+        if (event.usage[key] < usage[key])
+          throw new Error('USAGE: counters moved backwards');
+      usage = event.usage;
+    }
     if (event.event_type === 'mutation') {
+      if (status !== 'executing')
+        throw new Error('EVIDENCE: mutation outside execution');
+      verificationCurrent = false;
       same(event.before_subject_digest, subject, 'mutation chronology');
       const result = terminal.effects.find(
         (result) =>
@@ -110,10 +157,38 @@ function validateReceipt(start, terminal, fixture, calls) {
         result.body.observed_post_effect_subject?.digest,
         'mutation result subject',
       );
+      const authorization = body.events.find(
+        (item) =>
+          item.event_type === 'protected_effect_decision' &&
+          item.decision_id === event.decision_id,
+      );
+      if (
+        !authorization ||
+        authorization.gate !== 'workflow' ||
+        authorization.decision.outcome !== 'allow' ||
+        authorization.decision.code !== 'workflow.mutation_authorized' ||
+        authorization.sequence >= event.sequence
+      )
+        throw new Error('AUTHORITY: mutation lacks prior workflow allow');
+      same(
+        authorization.protected_effect_digest,
+        event.protected_effect_digest,
+        'mutation authority effect',
+      );
+      same(
+        event.evidence.map((item) => item.digest),
+        result.body.evidence
+          .filter((item) => item.evidence_type === 'artifact')
+          .map((item) => item.digest),
+        'mutation artifact evidence',
+      );
       subject = event.after_subject_digest;
     }
     if (event.event_type === 'verification') {
+      if (status !== 'verifying')
+        throw new Error('VERIFICATION: report outside verification stage');
       verification = event;
+      verificationCurrent = event.subject_digest === subject;
       const observed = calls.find(
         (call) => call.port === 'verifier.verify',
       )?.reply;
@@ -128,6 +203,12 @@ function validateReceipt(start, terminal, fixture, calls) {
         same(event[key], observed[key], 'verifier observed ' + key);
     }
   }
+  same(usage, body.usage, 'final usage ledger');
+  same(
+    body.events.at(-1).reason,
+    body.terminal_reason,
+    'terminal ledger reason',
+  );
   same(status, body.terminal_status, 'final ledger status');
   same(subject, body.resulting_subject_digest, 'mutation ledger');
   for (const [index, result] of terminal.effects.entries()) {
@@ -149,6 +230,16 @@ function validateReceipt(start, terminal, fixture, calls) {
     same(resultBody.run_id, request.run_id, 'effect run');
     same(resultBody.effect_id, effect.effect_id, 'effect identity');
     same(resultBody.effect_sequence, effect.effect_sequence, 'effect sequence');
+    same(
+      resultBody.observed_capability,
+      effect.capability,
+      'observed capability',
+    );
+    same(
+      resultBody.decision.subject_digest,
+      effect.subject.digest,
+      'decision subject',
+    );
     same(
       resultBody.observed_pre_effect_subject,
       effect.subject,
@@ -185,6 +276,12 @@ function validateReceipt(start, terminal, fixture, calls) {
       resultBody.decision.decision,
       'decisive authority',
     );
+    same(decisionEvent.gate, resultBody.decision.gate, 'decisive gate');
+    same(
+      decisionEvent.subject_digest,
+      resultBody.decision.subject_digest,
+      'decisive subject',
+    );
     same(
       decisionEvent.protected_effect_digest,
       identity(effect),
@@ -208,6 +305,44 @@ function validateReceipt(start, terminal, fixture, calls) {
         [result.result_digest],
         'tool event result binding',
       );
+      const gates = body.events.filter(
+        (event) =>
+          event.event_type === 'protected_effect_decision' &&
+          event.protected_effect_digest === identity(effect),
+      );
+      let previous = planned[0].sequence;
+      for (const gate of [
+        'permission',
+        'tool_trust',
+        'runtime',
+        ...(effect.expected_effect_class === 'mutation' ? ['workflow'] : []),
+      ]) {
+        const authorization = gates.find((event) => event.gate === gate);
+        if (
+          !authorization ||
+          authorization.decision.outcome !== 'allow' ||
+          authorization.sequence <= previous ||
+          authorization.sequence >= toolEvent.sequence
+        )
+          throw new Error('AUTHORITY: missing or unordered ' + gate + ' allow');
+        same(
+          authorization.subject_digest,
+          effect.subject.digest,
+          'authorization subject',
+        );
+        if (gate === 'workflow')
+          same(
+            authorization.decision.code,
+            'workflow.mutation_authorized',
+            'mutation workflow code',
+          );
+        previous = authorization.sequence;
+      }
+      same(
+        toolEvent.evidence.map((item) => item.evidence_type),
+        ['tool_execution'],
+        'tool evidence type',
+      );
       if (!execution.reply.error) {
         for (const field of [
           'execution_status',
@@ -216,6 +351,8 @@ function validateReceipt(start, terminal, fixture, calls) {
           'executor',
           'sandbox_profile',
           'evidence',
+          'exit',
+          'reason',
         ])
           same(
             resultBody[field],
@@ -243,6 +380,39 @@ function validateReceipt(start, terminal, fixture, calls) {
     }
   }
   if (body.terminal_status === 'completed') {
+    if (!verificationCurrent)
+      throw new Error(
+        'VERIFICATION: no current verification after latest mutation',
+      );
+    const completion = body.events.filter(
+      (event) =>
+        event.event_type === 'protected_effect_decision' &&
+        event.gate === 'workflow' &&
+        event.decision.code === 'workflow.completion_authorized',
+    );
+    same(completion.length, 1, 'one completion authorization');
+    same(completion[0].decision.outcome, 'allow', 'completion authority');
+    same(
+      completion[0].protected_effect_digest,
+      body.resulting_subject_digest,
+      'completion subject binding',
+    );
+    same(
+      completion[0].subject_digest,
+      body.resulting_subject_digest,
+      'completion current subject',
+    );
+    if (
+      !verification ||
+      completion[0].sequence <= verification.sequence ||
+      completion[0].sequence >= body.events.at(-1).sequence
+    )
+      throw new Error('AUTHORITY: completion must follow verification');
+    if (
+      verification.implementer_id === verification.verifier_id ||
+      !start.support.verifier_ids.includes(verification.verifier_id)
+    )
+      throw new Error('VERIFICATION: trusted independent actor required');
     const verificationCall = calls.find(
       (call) => call.port === 'verifier.verify',
     );

@@ -69,6 +69,20 @@ readline.createInterface({ input: child.stdout }).on('line', (line) => {
     if (mode === 'wrong-request') body.request_digest = bad;
     if (mode === 'wrong-subject') body.resulting_subject_digest = bad;
     if (mode === 'missing-result') value.effects.pop();
+    if (mode === 'omit-authorization') {
+      body.events = body.events.filter(
+        (event) =>
+          event.event_type !== 'protected_effect_decision' ||
+          event.gate === 'permission',
+      );
+      body.events.forEach((event, index) => (event.sequence = index + 1));
+    }
+    if (mode === 'forged-capability')
+      for (const result of value.effects) {
+        result.body.observed_capability.digest = bad;
+        result.result_digest = identity(result.body);
+      }
+
     if (mode === 'reordered-results') value.effects.reverse();
     if (mode === 'fabricated-success' || mode === 'stale-completion') {
       body.terminal_status = 'completed';
@@ -108,6 +122,7 @@ readline.createInterface({ input: child.stdout }).on('line', (line) => {
         'wrong-executor',
         'alter-usage',
         'forge-verifier-evidence',
+        'forged-capability',
       ].includes(mode)
     ) {
       for (const event of body.events.filter(
@@ -119,6 +134,39 @@ readline.createInterface({ input: child.stdout }).on('line', (line) => {
         );
         if (result) event.evidence[0].digest = result.result_digest;
       }
+    }
+    value.receipt.receipt_digest = identity(body);
+    if (
+      mode === 'invented-exit' ||
+      mode === 'invented-reason' ||
+      mode === 'wrong-decision-subject'
+    )
+      for (const result of value.effects) {
+        if (mode === 'invented-exit')
+          result.body.exit = { exit_type: 'code', code: 42 };
+        if (mode === 'invented-reason')
+          result.body.reason = 'invented executor reason';
+        if (mode === 'wrong-decision-subject')
+          result.body.decision.subject_digest = bad;
+        result.result_digest = identity(result.body);
+        for (const event of body.events.filter(
+          (event) =>
+            event.event_type === 'tool_execution' &&
+            event.protected_effect_digest === result.body.effect_request_digest,
+        ))
+          event.evidence[0].digest = result.result_digest;
+      }
+    if (mode === 'verification-before-mutation') {
+      const verification = body.events.find(
+        (event) => event.event_type === 'verification',
+      );
+      body.events = body.events.filter((event) => event !== verification);
+      body.events.splice(
+        body.events.findIndex((event) => event.event_type === 'mutation'),
+        0,
+        verification,
+      );
+      body.events.forEach((event, index) => (event.sequence = index + 1));
     }
     value.receipt.receipt_digest = identity(body);
     if (mode === 'body-tamper') body.terminal_reason = 'tampered';

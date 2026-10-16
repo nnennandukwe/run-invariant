@@ -51,6 +51,12 @@ const mutants = [
   ['alter-usage', 0],
   ['forge-verifier-evidence', 0],
   ['wrong-executor', 0],
+  ['omit-authorization', 0],
+  ['forged-capability', 0],
+  ['invented-exit', 0],
+  ['invented-reason', 0],
+  ['wrong-decision-subject', 0],
+  ['verification-before-mutation', 0],
   ['wrong-transcript', 0],
   ['work-after-terminal', 0],
 ];
@@ -61,7 +67,7 @@ for (const [mutant, index] of mutants)
     async () => {
       await assert.rejects(
         invoke([process.execPath, proxy, mutant, binary], corpus.cases[index]),
-        /BINDING|TRANSCRIPT|EVIDENCE|TERMINAL/,
+        /BINDING|TRANSCRIPT|EVIDENCE|TERMINAL|AUTHORITY|VERIFICATION/,
       );
     },
   );

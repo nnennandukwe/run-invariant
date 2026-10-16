@@ -81,8 +81,12 @@ the canonical Agent Run Request without LF and must match the receipt. The termi
 excluding start and terminal. The packet records `response_digest` over the exact
 terminal frame including LF and includes all three source records for inspection.
 It also identifies corpus, fixture, protocol, schema, manifest and executable bytes.
-Executable and file arguments are hashed before and after the suite; changed bytes
-invalidate the packet. Subject name/version fields remain self-reported metadata.
+The executable is resolved to an absolute path before invocation. Executable and
+file arguments are hashed before and after the suite; changed observed bytes
+invalidate the packet. These are file observations, not authenticated loader
+measurements or digests of every transitive dependency. A privileged local process
+can race a file change; this suite doesn't defend against a hostile host. Subject
+name/version fields remain self-reported metadata.
 
 The signer signs the canonical start/request/receipt digest object plus LF with a
 published Ed25519 fixture seed. This checks binding and signer interaction. Anyone
@@ -92,8 +96,10 @@ owns that separate boundary.
 
 A case has a ten-second wall deadline and four-MiB stdout/stderr limits. Exceeded
 limits, signals, missing/partial responses and extra messages fail closed. On POSIX,
-the runner kills the process group, including descendants, after completion or
-failure. Native Windows termination covers the immediate child only. The runner
+the runner kills the original process group after completion or failure.
+This covers descendants in that group; a process that creates another session can
+escape that cleanup. Run only explicitly trusted local subjects. The runner isn't
+an execution sandbox. Native Windows termination covers the immediate child only. The runner
 waits for process exit before accepting a result. The post-terminal case submits
 additional input after a valid receipt and requires refusal with exit 1 and no
 further stdout. Other cases require exit 0.

@@ -74,7 +74,11 @@ async function run(command, options = {}) {
   let subject;
   for (const fixture of corpus.cases) {
     try {
-      const result = await invoke(command, fixture, options);
+      const result = await invoke(
+        [artifacts[0].path, ...command.slice(1)],
+        fixture,
+        options,
+      );
       if (subject && identity(subject) !== identity(result.terminal.subject))
         throw new Error('SUBJECT: identity changed between cases');
       subject = result.terminal.subject;
@@ -150,6 +154,8 @@ async function run(command, options = {}) {
       command,
       executable_sha256: artifacts[0].sha256,
       artifacts,
+      artifact_identity:
+        "File bytes observed before and after execution; this isn't an authenticated loader measurement or a digest of transitive dependencies.",
     },
     conformance: {
       total: cases.length,

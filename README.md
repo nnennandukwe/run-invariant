@@ -31,7 +31,7 @@ new packet and never changes a file.
 ## Quick Start
 
 RunInvariant requires Node.js 20 or newer and `npm ci` for its pinned JSON-schema
-validators. Running either suite is offline and requires no service credentials.
+validators. Running each suite is offline and requires no service credentials.
 The optional ThreadLoop integration tests use `THREADLOOP_CHECKOUT` to locate
 the separately acquired, pinned corpus.
 
