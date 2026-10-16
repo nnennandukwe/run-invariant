@@ -59,6 +59,7 @@ const mutants = [
     2,
     /EVIDENCE: non-execution contains execution-derived evidence/,
   ],
+  ["usage-before-execution", 0, /BINDING: usage execution chronology/],
   ["lost-invented-reason", 9, /BINDING: lost reply diagnostic/],
   ["lost-invented-exit", 9, /BINDING: lost reply exit/],
   ["lost-invented-executor", 9, /BINDING: lost reply executor identity/],

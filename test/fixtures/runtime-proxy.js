@@ -66,6 +66,12 @@ readline.createInterface({ input: child.stdout }).on("line", (line) => {
     heldTerminal = value;
     const body = value.receipt.body;
     const bad = "sha256:" + "0".repeat(64);
+    if (mode === "usage-before-execution") {
+      const usage = body.events.findLast((event) => event.event_type === "usage");
+      body.events = body.events.filter((event) => event !== usage);
+      body.events.splice(body.events.findIndex((event) => event.event_type === "tool_execution"), 0, usage);
+      body.events.forEach((event, index) => (event.sequence = index + 1));
+    }
     if (mode === "wrong-request") body.request_digest = bad;
     if (mode === "wrong-subject") body.resulting_subject_digest = bad;
     if (mode === "wrong-tool-decision")

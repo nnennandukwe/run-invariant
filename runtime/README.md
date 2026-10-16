@@ -73,7 +73,8 @@ observations, including failed, interrupted or uncertain effects. They aren't
 expected terminal outcomes. A lost executor reply retains only host-provided evidence,
 the configured identities, a fixed transport-loss diagnostic and the known one-call
 usage lower bound. It can't assert an exit, a post-effect subject or an external outcome.
-Denied effects can't claim execution-derived evidence. The clock reports cumulative adapter milliseconds from
+Denied effects can't claim execution-derived evidence. Usage updates match the
+ordered cumulative host executor and clock observations and follow their tool attempts. The clock reports cumulative adapter milliseconds from
 run start zero, after an operation, including failed operations with an observed reply; executor
 usage is counted separately. Zero-time effects can use a zero elapsed estimate.
 If no clock observation survives a transport failure, recorded usage remains a

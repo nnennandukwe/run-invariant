@@ -116,6 +116,27 @@ function validateReceipt(start, terminal, fixture, calls) {
     (event) => event.event_type === "tool_execution",
   );
   same(toolEvents.length, executed.length, "executor evidence count");
+  // Replay only host observations; each usage snapshot follows its known attempts.
+  const usageSnapshots = [];
+  let observedUsage = { cost_micros: 0, elapsed_ms: 0, model_tokens: 0, tool_calls: 0 };
+  let adapterElapsed = 0;
+  let attempts = 0;
+  for (const call of calls) {
+    if (call.port === "executor.execute") {
+      attempts++;
+      const delta = call.reply.error
+        ? { cost_micros: 0, elapsed_ms: 0, model_tokens: 0, tool_calls: 1 }
+        : call.reply.usage;
+      for (const key of Object.keys(observedUsage)) observedUsage[key] += delta[key];
+    } else if (call.port === "clock.adapter_elapsed_ms") {
+      observedUsage.elapsed_ms += call.reply - adapterElapsed;
+      adapterElapsed = call.reply;
+    } else continue;
+    if (!usageSnapshots.length || !equal(usageSnapshots.at(-1).usage, observedUsage))
+      usageSnapshots.push({ usage: { ...observedUsage }, attempts });
+  }
+  let usageIndex = 0;
+  let recordedAttempts = 0;
   let status = "accepted";
   let subject = request.subject.digest;
   let verification;
@@ -136,6 +157,7 @@ function validateReceipt(start, terminal, fixture, calls) {
     if (event.event_type === "tool_execution") {
       if (status !== "executing")
         throw new Error("AUTHORITY: execution outside executing state");
+      recordedAttempts++;
       const observed = executed.find(
         (call) => identity(call.input) === event.protected_effect_digest,
       );
@@ -148,6 +170,10 @@ function validateReceipt(start, terminal, fixture, calls) {
       );
     }
     if (event.event_type === "usage") {
+      const observed = usageSnapshots[usageIndex++];
+      if (!observed) throw new Error("USAGE: unobserved usage update");
+      same(recordedAttempts, observed.attempts, "usage execution chronology");
+      same(event.usage, observed.usage, "usage host observations");
       for (const key of Object.keys(usage))
         if (event.usage[key] < usage[key])
           throw new Error("USAGE: counters moved backwards");
@@ -220,6 +246,7 @@ function validateReceipt(start, terminal, fixture, calls) {
         same(event[key], observed[key], "verifier observed " + key);
     }
   }
+  same(usageIndex, usageSnapshots.length, "all observed usage updates");
   same(usage, body.usage, "final usage ledger");
   same(
     body.events.at(-1).reason,
@@ -482,7 +509,7 @@ function validateReceipt(start, terminal, fixture, calls) {
         "usage",
         "subject_observation",
       ])
-        if (!resultBody.evidence.some((e) => e.evidence_type === type))
+        if (!resultBody.evidence.some((item) => item.evidence_type === type))
           throw new Error("EVIDENCE: missing " + type);
     }
   }
