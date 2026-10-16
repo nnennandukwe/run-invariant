@@ -1,0 +1,9 @@
+{
+  "evidence/conformance-v0.1.0.json": "sha256:5755d76dcfd33f16f33eb54c6f4fa1791306aa1504d6c007bb12af96629b194a",
+  "fixtures/cases.v0.1.0.json": "sha256:b03bd707aa7e6e94c78dae5e5e2339a3e556c39272eaeaf9075e2dff112ff7cf",
+  "protocol/README.md": "sha256:8b801859285ac0547395bd1e17253a22c2d8de652d662be486778e03baf3c14a",
+  "protocol/v0.1.0.json": "sha256:2ee636c7f634bb403603a1140f12c47634a7c19313fcc39272d13422f355b256",
+  "subject-protocol/README.md": "sha256:1e38b690e7bb863fd6c190745adbb2cb387c8948fef9ad332550ca38b3022bc2",
+  "subject-protocol/v0.1.0/request.schema.json": "sha256:8fb7dd076bc2d2c05228bc15e8bc0c2b76dd47d989ae79788e249538acc03a8d",
+  "subject-protocol/v0.1.0/response.schema.json": "sha256:6501e3c906f7f641c81d43cdb088966d3669c6ff8b8566ba551d055ef87bd1ba"
+}

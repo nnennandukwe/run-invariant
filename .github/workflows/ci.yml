@@ -41,5 +41,26 @@ jobs:
         env:
           THREADLOOP_CHECKOUT: ${{ github.workspace }}/.threadloop-corpus
 
+      - name: Check out pinned GAAP runtime subject
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: nnennandukwe/governed-agent-autonomy-patterns
+          ref: 800b9782188ef4f89067798161a0b709aef10d3e
+          path: .gaap-runtime
+          persist-credentials: false
+
+      - name: Validate runtime manifest and pinned contract sources
+        run: |
+          npm run check:runtime
+          node scripts/check-runtime-reference.js .gaap-runtime
+
+      - name: Build opaque GAAP runtime subject
+        run: cargo build --locked --manifest-path .gaap-runtime/Cargo.toml
+
+      - name: Exercise runtime, negative paths and unsafe subjects
+        run: npm run test:runtime
+        env:
+          GAAP_BINARY: ${{ github.workspace }}/.gaap-runtime/target/debug/gaap
+
       - name: Reproduce committed evidence
         run: npm run check

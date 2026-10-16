@@ -3,7 +3,8 @@
 RunInvariant runs frozen conformance cases against an external executable and
 returns a JSON evidence packet. The legacy decision suite also includes a
 reference evaluator. The separately selected ThreadLoop suite consumes a pinned
-controller corpus owned by ThreadLoop.
+controller corpus owned by ThreadLoop. The separately versioned runtime suite
+tests Agent Run ports and receipts through a live external process.
 
 Harness maintainers use the legacy suite to test whether an implementation returns
 the exact `allow`, `ask`, or `block` decision required at each agent-run integrity gate.
@@ -19,6 +20,7 @@ link to this repository.
 | [`subject-protocol`](./subject-protocol/README.md) | Language-neutral, versioned process interface | Implement stdin request and stdout response documents in an external harness. |
 | `npm run check` | Reference conformance check | Recompute the included evaluator's packet and compare it with committed evidence. |
 | [`run-invariant threadloop`](./threadloop/README.md) | Controller conformance suite | Consume the pinned external corpus and validate a separately identified subject. |
+| [`run-invariant runtime`](./runtime/README.md) | Governed Agent Run conformance | Drive scripted ports, validate receipt bindings and inspect runtime failure cases. |
 | `run-invariant subject` | External subject check | Execute a harness process against cases that do not disclose their expected decisions. |
 | [`evidence/conformance-v0.1.0.json`](./evidence/conformance-v0.1.0.json) | Committed derived reference packet | Reproduce the historical 35/35 reference and 5/5 mutation result. |
 

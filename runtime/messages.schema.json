@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "run-invariant.runtime-messages/0.1.0",
+  "oneOf": [
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "protocol", "request", "support"],
+      "properties": {
+        "kind": {
+          "const": "start"
+        },
+        "protocol": {
+          "const": "run-invariant.runtime/0.2.0"
+        },
+        "request": {
+          "$ref": "urn:gaap:schema:agent-run-request"
+        },
+        "support": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "policies",
+            "capabilities",
+            "tool_schemas",
+            "permission",
+            "executor",
+            "verifier_ids",
+            "max_effects"
+          ],
+          "properties": {
+            "policies": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "version", "digest"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  },
+                  "version": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  },
+                  "digest": {
+                    "type": "string",
+                    "pattern": "^sha256:[0-9a-f]{64}$"
+                  }
+                }
+              },
+              "maxItems": 128
+            },
+            "capabilities": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["name", "version", "digest"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  },
+                  "version": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1024
+                  },
+                  "digest": {
+                    "type": "string",
+                    "pattern": "^sha256:[0-9a-f]{64}$"
+                  }
+                }
+              },
+              "maxItems": 128
+            },
+            "permission": {
+              "enum": ["allow", "ask", "deny"]
+            },
+            "executor": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "version", "digest"],
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1024
+                },
+                "version": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 1024
+                },
+                "digest": {
+                  "type": "string",
+                  "pattern": "^sha256:[0-9a-f]{64}$"
+                }
+              }
+            },
+            "verifier_ids": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "maxItems": 128
+            },
+            "max_effects": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 128
+            },
+            "tool_schemas": {
+              "type": "array",
+              "maxItems": 128,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["capability", "tool_schema_digest"],
+                "properties": {
+                  "capability": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "required": ["name", "version", "digest"],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1024
+                      },
+                      "version": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1024
+                      },
+                      "digest": {
+                        "type": "string",
+                        "pattern": "^sha256:[0-9a-f]{64}$"
+                      }
+                    }
+                  },
+                  "tool_schema_digest": {
+                    "type": "string",
+                    "pattern": "^sha256:[0-9a-f]{64}$"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "sequence", "port", "input"],
+      "properties": {
+        "kind": {
+          "const": "call"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "port": {
+          "enum": [
+            "clock.now",
+            "agent.plan",
+            "agent.next",
+            "executor.execute",
+            "verifier.verify",
+            "signer.sign",
+            "subject.observe"
+          ]
+        },
+        "input": {}
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "sequence", "value"],
+      "properties": {
+        "kind": {
+          "const": "reply"
+        },
+        "sequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "value": {}
+      }
+    },
+    {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "protocol",
+        "request_digest",
+        "transcript_digest",
+        "subject",
+        "receipt",
+        "effects",
+        "signature",
+        "start_digest"
+      ],
+      "properties": {
+        "kind": {
+          "const": "terminal"
+        },
+        "protocol": {
+          "const": "run-invariant.runtime/0.2.0"
+        },
+        "request_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "transcript_digest": {
+          "$ref": "#/$defs/digest"
+        },
+        "subject": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["name", "version", "implementation"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1
+            },
+            "version": {
+              "type": "string",
+              "minLength": 1
+            },
+            "implementation": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "receipt": {
+          "$ref": "urn:gaap:schema:terminal-run-receipt"
+        },
+        "effects": {
+          "type": "array",
+          "items": {
+            "$ref": "urn:gaap:schema:protected-effect-result"
+          },
+          "maxItems": 128
+        },
+        "signature": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["keyid", "signature"],
+          "properties": {
+            "keyid": {
+              "const": "run-invariant-public-fixture"
+            },
+            "signature": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "start_digest": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  }
+}

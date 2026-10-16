@@ -103,6 +103,7 @@ function printHelp() {
       '       run-invariant subject [--json] -- <executable> [arguments...]',
       '',
       '       run-invariant threadloop --help',
+      '       run-invariant runtime --help',
       '',
       'Modes:',
       '  --check  Compare a fresh packet with committed evidence.',
@@ -110,6 +111,7 @@ function printHelp() {
       '  --json   Print a fresh packet as JSON without writing.',
       '  subject  Test an external process against the frozen cases.',
       '  threadloop  Select the separately pinned ThreadLoop controller suite.',
+      '  runtime  Test governed Agent Run ports and receipts through an external process.',
       '',
     ].join('\n'),
   );
@@ -117,6 +119,10 @@ function printHelp() {
 
 function main(argv) {
   const mode = argv[0] || '--check';
+  if (mode === 'runtime') {
+    require('../src/runtime/runner').main(argv.slice(1));
+    return;
+  }
   if (mode === 'threadloop') {
     return require('../src/threadloop/cli').main(argv.slice(1));
   }
