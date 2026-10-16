@@ -118,7 +118,12 @@ function validateReceipt(start, terminal, fixture, calls) {
   same(toolEvents.length, executed.length, "executor evidence count");
   // Replay only host observations; each usage snapshot follows its known attempts.
   const usageSnapshots = [];
-  let observedUsage = { cost_micros: 0, elapsed_ms: 0, model_tokens: 0, tool_calls: 0 };
+  let observedUsage = {
+    cost_micros: 0,
+    elapsed_ms: 0,
+    model_tokens: 0,
+    tool_calls: 0,
+  };
   let adapterElapsed = 0;
   let attempts = 0;
   for (const call of calls) {
@@ -127,12 +132,16 @@ function validateReceipt(start, terminal, fixture, calls) {
       const delta = call.reply.error
         ? { cost_micros: 0, elapsed_ms: 0, model_tokens: 0, tool_calls: 1 }
         : call.reply.usage;
-      for (const key of Object.keys(observedUsage)) observedUsage[key] += delta[key];
+      for (const key of Object.keys(observedUsage))
+        observedUsage[key] += delta[key];
     } else if (call.port === "clock.adapter_elapsed_ms") {
       observedUsage.elapsed_ms += call.reply - adapterElapsed;
       adapterElapsed = call.reply;
     } else continue;
-    if (!usageSnapshots.length || !equal(usageSnapshots.at(-1).usage, observedUsage))
+    if (
+      !usageSnapshots.length ||
+      !equal(usageSnapshots.at(-1).usage, observedUsage)
+    )
       usageSnapshots.push({ usage: { ...observedUsage }, attempts });
   }
   let usageIndex = 0;
@@ -150,6 +159,19 @@ function validateReceipt(start, terminal, fixture, calls) {
       same(event.from, status, "transition source");
       if (["completed", "blocked", "failed", "interrupted"].includes(status))
         throw new Error("TERMINAL: event after terminal status");
+      const allowed = {
+        accepted: ["planning"],
+        planning: ["awaiting_authority", "executing"],
+        awaiting_authority: ["planning", "executing"],
+        executing: ["awaiting_authority", "verifying"],
+        verifying: ["executing", "completed"],
+      };
+      if (
+        event.to === status ||
+        (!["blocked", "failed", "interrupted"].includes(event.to) &&
+          !allowed[status]?.includes(event.to))
+      )
+        throw new Error("TERMINAL: invalid lifecycle transition");
       status = event.to;
     }
     if (event.event_type === "protected_effect_decision")
@@ -559,6 +581,21 @@ function validateReceipt(start, terminal, fixture, calls) {
       throw new Error(
         "VERIFICATION: completion requires current independent evidence",
       );
+    const finalObservation = calls.find(
+      (call) => call.port === "subject.observe",
+    );
+    if (
+      !finalObservation ||
+      finalObservation.sequence <= verificationCall.sequence
+    )
+      throw new Error(
+        "VERIFICATION: missing final physical subject observation",
+      );
+    same(
+      finalObservation.reply,
+      verificationCall.input.subject,
+      "final physical subject observation",
+    );
     if (
       !verification ||
       verification.subject_digest !== body.resulting_subject_digest

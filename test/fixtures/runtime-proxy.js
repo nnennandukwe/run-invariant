@@ -12,6 +12,7 @@ let requestBytes,
   heldSigner,
   heldTerminal,
   signing = false;
+let observationSubject;
 const transcript = [];
 const send = (value) => process.stdout.write(frame(value));
 const input = readline.createInterface({ input: process.stdin });
@@ -46,6 +47,14 @@ input.on("line", (line) => {
     signing = false;
   } else {
     if (value.kind === "reply") transcript.push(frame(value));
+    if (
+      mode === "ignore-final-observation" &&
+      observationSubject &&
+      value.kind === "reply"
+    ) {
+      value.value = observationSubject;
+      observationSubject = undefined;
+    }
     child.stdin.write(frame(value));
   }
 });
@@ -53,6 +62,8 @@ input.on("close", () => child.stdin.end());
 child.stdin.on("error", () => {});
 readline.createInterface({ input: child.stdout }).on("line", (line) => {
   const value = JSON.parse(line);
+  if (value.kind === "call" && value.port === "subject.observe")
+    observationSubject = value.input.subject;
   if (value.kind === "call" && value.port === "signer.sign") {
     heldSigner = value;
     child.stdin.write(
@@ -67,9 +78,28 @@ readline.createInterface({ input: child.stdout }).on("line", (line) => {
     const body = value.receipt.body;
     const bad = "sha256:" + "0".repeat(64);
     if (mode === "usage-before-execution") {
-      const usage = body.events.findLast((event) => event.event_type === "usage");
+      const usage = body.events.findLast(
+        (event) => event.event_type === "usage",
+      );
       body.events = body.events.filter((event) => event !== usage);
-      body.events.splice(body.events.findIndex((event) => event.event_type === "tool_execution"), 0, usage);
+      body.events.splice(
+        body.events.findIndex((event) => event.event_type === "tool_execution"),
+        0,
+        usage,
+      );
+      body.events.forEach((event, index) => (event.sequence = index + 1));
+    }
+    if (mode === "skip-planning-states") {
+      body.events = body.events.filter(
+        (event) =>
+          event.event_type !== "status_transition" ||
+          !["planning", "awaiting_authority"].includes(event.to),
+      );
+      const executing = body.events.find(
+        (event) =>
+          event.event_type === "status_transition" && event.to === "executing",
+      );
+      executing.from = "accepted";
       body.events.forEach((event, index) => (event.sequence = index + 1));
     }
     if (mode === "wrong-request") body.request_digest = bad;

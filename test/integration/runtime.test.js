@@ -39,6 +39,7 @@ const mutants = [
   ["ask-is-allow", 1],
   ["block-is-allow", 2],
   ["ignore-schema-pin", 3],
+  ["skip-planning-states", 0, /TERMINAL: invalid lifecycle transition/],
   ["wrong-request", 0],
   ["wrong-subject", 0],
   ["missing-result", 0],
@@ -122,4 +123,17 @@ test("runtime CLI exports a packet with independently reproducible retained byte
     );
     assert.equal(hash(frame(records.response)), result.response_digest);
   }
+});
+
+test("kills unsafe runtime mutant: ignore-final-observation", async () => {
+  const fixture = structuredClone(corpus.cases[0]);
+  fixture.steps.find((step) => step.port === "subject.observe").reply.digest =
+    "sha256:" + "f".repeat(64);
+  await assert.rejects(
+    invoke(
+      [process.execPath, proxy, "ignore-final-observation", binary],
+      fixture,
+    ),
+    /BINDING: final physical subject observation/,
+  );
 });

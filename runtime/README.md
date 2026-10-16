@@ -111,7 +111,8 @@ an execution sandbox. Native Windows termination covers the immediate child only
 waits for process exit before accepting a result and reaps a rejected child before
 starting the next case. If closure can't be confirmed, the suite stops. The post-terminal case submits
 additional input after a valid receipt and requires refusal with exit 1 and no
-further stdout. Other cases require exit 0.
+further stdout. This checks observable process behavior; it can't prove an internal
+stdin read. Other cases require exit 0.
 
 ## Cases and unsafe subjects
 
